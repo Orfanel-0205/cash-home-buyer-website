@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Dashboard | Admin</title>
+ 
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Lead Dashboard</h1>
+        <div class="user-info">
+            <span id="userName">Loading...</span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <h3>Total Leads</h3>
+                <div class="number" id="totalLeads">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Today</h3>
+                <div class="number" id="todayLeads">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>New</h3>
+                <div class="number" id="newLeads">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>In Progress</h3>
+                <div class="number" id="inProgressLeads">-</div>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <select id="statusFilter" onchange="loadLeads()">
+                <option value="">All Status</option>
+                <option value="New">New</option>
+                <option value="Contacted">Contacted</option>
+                <option value="Under Review">Under Review</option>
+                <option value="Offer Made">Offer Made</option>
+                <option value="Closed">Closed</option>
+            </select>
+            
+            <button class="btn-view" onclick="loadLeads()">Refresh</button>
+        </div>
+        
+        <div class="leads-table">
+            <div id="loading" class="loading">Loading leads...</div>
+            <div id="emptyState" class="empty-state" style="display: none;">
+                No leads found
+            </div>
+            <table id="leadsTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Property</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Contact</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="leadsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Lead Detail Modal -->
+    <div id="leadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Lead Details</h2>
+                <button class="btn-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="leadDetails"></div>
+        </div>
+    </div>
+    
+    <script>
+        const token = localStorage.getItem('adminToken');
+        const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
+        
+        // Check authentication
+        if (!token) {
+            window.location.href = 'admin-login.html';
+        }
+        
+        document.getElementById('userName').textContent = user.fullName || user.username;
+        
+        // Load stats and leads on page load
+        loadStats();
+        loadLeads();
+        
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/leads/stats/summary', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalLeads').textContent = data.data.total;
+                    document.getElementById('todayLeads').textContent = data.data.todayCount;
+                    
+                    const statusCounts = {};
+                    data.data.byStatus.forEach(s => {
+                        statusCounts[s._id] = s.count;
+                    });
+                    
+                    document.getElementById('newLeads').textContent = statusCounts['New'] || 0;
+                    const inProgress = (statusCounts['Contacted'] || 0) + 
+                                      (statusCounts['Under Review'] || 0) + 
+                                      (statusCounts['Offer Made'] || 0);
+                    document.getElementById('inProgressLeads').textContent = inProgress;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        async function loadLeads() {
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('emptyState');
+            const table = document.getElementById('leadsTable');
+            const tbody = document.getElementById('leadsBody');
+            
+            loading.style.display = 'block';
+            emptyState.style.display = 'none';
+            table.style.display = 'none';
+            
+            const statusFilter = document.getElementById('statusFilter').value;
+            const params = new URLSearchParams();
+            if (statusFilter) params.append('status', statusFilter);
+            params.append('limit', '100');
+            
+            try {
+                const response = await fetch(`/api/leads?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                loading.style.display = 'none';
+                
+                if (data.success && data.data.length > 0) {
+                    table.style.display = 'table';
+                    tbody.innerHTML = data.data.map(lead => `
+                        <tr>
+                            <td>${new Date(lead.submittedAt).toLocaleDateString()}</td>
+                            <td>${lead.fullName}</td>
+                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${lead.propertyAddress}</td>
+                            <td class="priority-${lead.priority.toLowerCase()}">${lead.priority}</td>
+                            <td><span class="status-badge status-${lead.status.toLowerCase().replace(/ /g, '-')}">${lead.status}</span></td>
+                            <td><a href="tel:${lead.phone}">${lead.phone}</a></td>
+                            <td><button class="btn-view" onclick="viewLead('${lead._id}')">View</button></td>
+                        </tr>
+                    `).join('');
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error loading leads:', error);
+                loading.textContent = 'Error loading leads';
+                if (error.status === 401) {
+                    logout();
+                }
+            }
+        }
+        
+        async function viewLead(id) {
+            try {
+                const response = await fetch(`/api/leads/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const lead = data.data;
+                    document.getElementById('leadDetails').innerHTML = `
+                        <div class="detail-row">
+                            <div class="detail-label">Property Address</div>
+                            <div class="detail-value">${lead.propertyAddress}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Property Type</div>
+                            <div class="detail-value">${lead.propertyType}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Condition</div>
+                            <div class="detail-value">${lead.propertyCondition}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Bedrooms / Bathrooms</div>
+                            <div class="detail-value">${lead.bedrooms || 'N/A'} / ${lead.bathrooms || 'N/A'}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Selling Reason</div>
+                            <div class="detail-value">${lead.sellingReason}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Timeframe</div>
+                            <div class="detail-value"><strong>${lead.timeframe}</strong></div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Mortgage Status</div>
+                            <div class="detail-value">${lead.oweMortgage || 'Not specified'}</div>
+                        </div>
+                        ${lead.additionalInfo ? `
+                        <div class="detail-row">
+                            <div class="detail-label">Additional Information</div>
+                            <div class="detail-value">${lead.additionalInfo}</div>
+                        </div>
+                        ` : ''}
+                        <hr style="margin: 20px 0;">
+                        <div class="detail-row">
+                            <div class="detail-label">Full Name</div>
+                            <div class="detail-value">${lead.fullName}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Email</div>
+                            <div class="detail-value"><a href="mailto:${lead.email}">${lead.email}</a></div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Phone</div>
+                            <div class="detail-value"><a href="tel:${lead.phone}">${lead.phone}</a></div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">Preferred Contact</div>
+                            <div class="detail-value">${lead.preferredContact}</div>
+                        </div>
+                        <div class="detail-row">
+                            <div class="detail-label">SMS Consent</div>
+                            <div class="detail-value">${lead.smsConsent ? 'Yes ✓' : 'No'}</div>
+                        </div>
+                        ${lead.tracking.utm_source ? `
+                        <hr style="margin: 20px 0;">
+                        <div class="detail-row">
+                            <div class="detail-label">Traffic Source</div>
+                            <div class="detail-value">${lead.tracking.utm_source}</div>
+                        </div>
+                        ${lead.tracking.utm_campaign ? `
+                        <div class="detail-row">
+                            <div class="detail-label">Campaign</div>
+                            <div class="detail-value">${lead.tracking.utm_campaign}</div>
+                        </div>
+                        ` : ''}
+                        ` : ''}
+                    `;
+                    
+                    document.getElementById('leadModal').classList.add('show');
+                }
+            } catch (error) {
+                console.error('Error loading lead:', error);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('leadModal').classList.remove('show');
+        }
+        
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminUser');
+            window.location.href = 'admin-login.html';
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('leadModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
