@@ -9,6 +9,12 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
+// Force IPv4 DNS resolution (Windows fix)
+const dns = require('dns');
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
+
 const app = express();
 
 // ===========================
@@ -49,17 +55,37 @@ app.use((req, res, next) => {
 // DATABASE CONNECTION
 // ===========================
 
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
-.then(() => {
-    console.log('✓ Connected to MongoDB');
-})
-.catch((err) => {
-    console.error('✗ MongoDB connection error:', err);
-    process.exit(1);
-});
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 15000,
+            socketTimeoutMS: 45000,
+        });
+        console.log('✓ Connected to MongoDB');
+        console.log(`✓ Database: ${mongoose.connection.name}`);
+    } catch (connError) {
+        if (connError.message.includes('ECONNREFUSED') || connError.message.includes('querySrv')) {
+            console.log('⚠ Connection failed. Attempting to use Google DNS (8.8.8.8)...');
+            dns.setServers(['8.8.8.8', '8.8.4.4']);
+            try {
+                await mongoose.connect(process.env.MONGODB_URI, {
+                    serverSelectionTimeoutMS: 15000,
+                    socketTimeoutMS: 45000,
+                });
+                console.log('✓ Connected to MongoDB via Google DNS');
+                console.log(`✓ Database: ${mongoose.connection.name}`);
+            } catch (fallbackError) {
+                console.error('✗ MongoDB connection error (after fallback):', fallbackError.message);
+                process.exit(1);
+            }
+        } else {
+            console.error('✗ MongoDB connection error:', connError.message);
+            process.exit(1);
+        }
+    }
+};
+
+connectDB();
 
 // ===========================
 // ROUTES
@@ -67,14 +93,15 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // API routes
 app.use('/api/leads', require('./routes/leads'));
-app.use('/api/admin', require('./models/Admin'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
     });
 });
 
@@ -115,13 +142,17 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════╗
 ║   Cash Home Buyers API Server         ║
 ║   Running on port ${PORT}                ║
 ║   Environment: ${process.env.NODE_ENV || 'development'}           ║
 ╚════════════════════════════════════════╝
+
+Frontend: http://localhost:${PORT}
+API: http://localhost:${PORT}/api
+Health: http://localhost:${PORT}/api/health
     `);
 });
 
