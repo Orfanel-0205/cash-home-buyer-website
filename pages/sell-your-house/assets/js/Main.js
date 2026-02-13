@@ -141,18 +141,42 @@ function getTrackingData() {
 
 // Format phone number as user types
 function formatPhoneNumber(input) {
-    const cleaned = input.value.replace(/\D/g, '');
-    let formatted = cleaned;
+    // Get the current cursor position
+    const cursorPosition = input.selectionStart;
+    const oldLength = input.value.length;
     
-    if (cleaned.length >= 10) {
-        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
-    } else if (cleaned.length >= 6) {
-        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-    } else if (cleaned.length >= 3) {
+    // Clean and format
+    const cleaned = input.value.replace(/\D/g, '');
+    let formatted = '';
+    
+    // Only format if there are digits
+    if (cleaned.length === 0) {
+        input.value = '';
+        return;
+    }
+    
+    if (cleaned.length <= 3) {
+        formatted = cleaned;
+    } else if (cleaned.length <= 6) {
         formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    } else if (cleaned.length <= 10) {
+        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else {
+        // Limit to 10 digits
+        formatted = `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
     }
     
     input.value = formatted;
+    
+    // Restore cursor position (approximately)
+    const newLength = formatted.length;
+    const lengthDiff = newLength - oldLength;
+    const newCursorPosition = cursorPosition + lengthDiff;
+    
+    // Only restore if position is valid
+    if (newCursorPosition >= 0 && newCursorPosition <= newLength) {
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    }
 }
 
 // Validate email format

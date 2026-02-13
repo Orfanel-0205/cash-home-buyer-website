@@ -5,227 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login | US Cash Buyers</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #1A1A1A 0%, #2D2D2D 100%);
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
         }
-        
-        .login-container {
+        .login-card {
             background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            padding: 2.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 400px;
         }
-        
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
+        h1 { text-align: center; color: #333; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; color: #666; font-size: 0.9rem; }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
         }
-        
-        .login-header h1 {
-            font-size: 28px;
-            color: #1A1A1A;
-            margin-bottom: 10px;
-        }
-        
-        .login-header p {
-            color: #666;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #333;
-        }
-        
-        .form-group input {
+        button {
             width: 100%;
             padding: 12px;
-            border: 2px solid #E0E0E0;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #D32F2F;
-        }
-        
-        .btn-login {
-            width: 100%;
-            padding: 14px;
-            background: #D32F2F;
+            background: #1A1A1A;
             color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
+            border-radius: 4px;
+            font-size: 1rem;
             cursor: pointer;
-            transition: background 0.3s;
+            margin-top: 1rem;
         }
-        
-        .btn-login:hover {
-            background: #B71C1C;
-        }
-        
-        .btn-login:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        
-        .error-message {
-            background: #ffebee;
-            color: #c62828;
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        
-        .error-message.show {
-            display: block;
-        }
-        
-        .back-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-        
-        .back-link a {
-            color: #D32F2F;
-            text-decoration: none;
-        }
-        
-        .back-link a:hover {
-            text-decoration: underline;
-        }
+        button:hover { background: #333; }
+        .error { color: #D32F2F; text-align: center; margin-top: 1rem; font-size: 0.9rem; display: none; }
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <h1>🔐 Admin Login</h1>
-            <p>US Cash Buyers Dashboard</p>
-        </div>
-        
-        <div id="errorMessage" class="error-message"></div>
-        
+    <div class="login-card">
+        <h1>Admin Login</h1>
         <form id="loginForm">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required autocomplete="username">
+                <label>Username</label>
+                <input type="text" id="username" required>
             </div>
-            
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password">
+                <label>Password</label>
+                <input type="password" id="password" required>
             </div>
-            
-            <button type="submit" class="btn-login" id="loginBtn">
-                <span id="btnText">Login</span>
-                <span id="btnLoader" style="display: none;">Logging in...</span>
-            </button>
+            <button type="submit" id="loginBtn">Login</button>
+            <div id="errorMsg" class="error">Invalid credentials</div>
         </form>
-        
-        <div class="back-link">
-            <a href="index.html">← Back to Website</a>
-        </div>
     </div>
-    
+
     <script>
-        const loginForm = document.getElementById('loginForm');
-        const errorMessage = document.getElementById('errorMessage');
-        const loginBtn = document.getElementById('loginBtn');
-        const btnText = document.getElementById('btnText');
-        const btnLoader = document.getElementById('btnLoader');
-        
-        loginForm.addEventListener('submit', async (e) => {
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Hide error
-            errorMessage.classList.remove('show');
-            
-            // Show loading
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'inline';
-            loginBtn.disabled = true;
-            
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            
+            const errorMsg = document.getElementById('errorMsg');
+            const btn = document.getElementById('loginBtn');
+
+            btn.textContent = 'Logging in...';
+            btn.disabled = true;
+            errorMsg.style.display = 'none';
+
             try {
-                const response = await fetch('/api/admin/login', {
+                const res = await fetch('/api/admin/login', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    // Save token
+
+                const data = await res.json();
+
+                if (data.success) {
                     localStorage.setItem('adminToken', data.token);
                     localStorage.setItem('adminUser', JSON.stringify(data.admin));
-                    
-                    // Redirect to dashboard
                     window.location.href = 'admin-dashboard.html';
                 } else {
-                    throw new Error(data.message || 'Login failed');
+                    throw new Error(data.message);
                 }
-                
-            } catch (error) {
-                errorMessage.textContent = error.message;
-                errorMessage.classList.add('show');
-                
-                // Reset button
-                btnText.style.display = 'inline';
-                btnLoader.style.display = 'none';
-                loginBtn.disabled = false;
+            } catch (err) {
+                errorMsg.textContent = err.message || 'Login failed';
+                errorMsg.style.display = 'block';
+                btn.textContent = 'Login';
+                btn.disabled = false;
             }
         });
-        
-        // Check if already logged in
-        const token = localStorage.getItem('adminToken');
-        if (token) {
-            // Verify token
-            fetch('/api/admin/verify', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = 'admin-dashboard.html';
-                }
-            })
-            .catch(() => {
-                // Invalid token, stay on login page
-                localStorage.removeItem('adminToken');
-                localStorage.removeItem('adminUser');
-            });
-        }
     </script>
 </body>
 </html>

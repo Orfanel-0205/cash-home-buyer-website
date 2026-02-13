@@ -1,59 +1,21 @@
-// ===========================
-// ADMIN MODEL - MongoDB Schema
-// ===========================
-
+//backend/models/Admin.js
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const adminSchema = new mongoose.Schema({
-    username: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true
-    },
-    password: {
-        type: String,
-        required: true,
-        minlength: 6
-    },
-    email: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        match: [/^\S+@\S+\.\S+$/, 'Please enter a valid email address']
-    },
-    fullName: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    role: {
-        type: String,
-        enum: ['admin', 'manager', 'agent'],
-        default: 'agent'
-    },
-    isActive: {
-        type: Boolean,
-        default: true
-    },
+    username: { type: String, required: true, unique: true, trim: true },
+    email: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    password: { type: String, required: true },
+    fullName: { type: String, default: 'Admin' },
+    role: { type: String, enum: ['admin', 'editor'], default: 'admin' },
+    isActive: { type: Boolean, default: true },
     lastLogin: Date,
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-}, {
-    timestamps: true
+    createdAt: { type: Date, default: Date.now }
 });
 
 // Hash password before saving
 adminSchema.pre('save', async function(next) {
-    if (!this.isModified('password')) {
-        return next();
-    }
+    if (!this.isModified('password')) return next();
     
     try {
         const salt = await bcrypt.genSalt(10);
@@ -64,26 +26,15 @@ adminSchema.pre('save', async function(next) {
     }
 });
 
-// Method to compare passwords
+// Method to compare password
 adminSchema.methods.comparePassword = async function(candidatePassword) {
-    try {
-        return await bcrypt.compare(candidatePassword, this.password);
-    } catch (error) {
-        throw error;
-    }
+    return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Method to update last login
-adminSchema.methods.updateLastLogin = function() {
+adminSchema.methods.updateLastLogin = async function() {
     this.lastLogin = new Date();
     return this.save();
-};
-
-// Don't return password in JSON
-adminSchema.methods.toJSON = function() {
-    const obj = this.toObject();
-    delete obj.password;
-    return obj;
 };
 
 module.exports = mongoose.model('Admin', adminSchema);

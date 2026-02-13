@@ -1,3 +1,4 @@
+//backend/utils/Email.js
 // ===========================
 // EMAIL UTILITY - Nodemailer with Gmail
 // ===========================

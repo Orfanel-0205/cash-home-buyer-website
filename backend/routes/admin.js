@@ -1,3 +1,4 @@
+//backend/routes/admin.js
 // ===========================
 // ADMIN ROUTES - API Endpoints
 // ===========================
@@ -23,11 +24,13 @@ router.post('/login', async (req, res) => {
 
         const admin = await Admin.findOne({ username: username.toLowerCase() });
         if (!admin) {
+            console.log(`Login failed: User '${username}' not found`);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) {
+            console.log(`Login failed: Password mismatch for user '${username}'`);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
