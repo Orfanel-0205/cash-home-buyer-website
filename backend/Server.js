@@ -1,4 +1,3 @@
-//backend/Server.js
 // ===========================
 // BACKEND SERVER - US CASH BUYERS
 // WITH EXPLICIT DNS FIX FOR NODE.JS
@@ -74,14 +73,16 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 }
 
 // ==========================================
-// 📱 SMS CONFIG CHECK
+// 📱 SMS CONFIG CHECK (CLICKSEND)
 // ==========================================
-if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY || !process.env.CLICKSEND_FROM_NUMBER) {
+if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY) {
     console.warn('⚠️  CLICKSEND credentials missing in .env. SMS will not send.');
+} else {
+    console.log('✅ ClickSend credentials loaded for:', process.env.CLICKSEND_USERNAME);
 }
 
 // ==========================================
-// �️ SECURITY MIDDLEWARE
+// 🛡️ SECURITY MIDDLEWARE
 // ==========================================
 
 app.use(helmet({

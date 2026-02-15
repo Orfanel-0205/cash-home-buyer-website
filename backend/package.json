@@ -1,39 +1,42 @@
 {
-  "name": "cash-home-buyers-backend",
-  "version": "1.0.0",
-  "description": "Backend API for Home Sell Direct",
-  "main": "server.js",
+  "name": "cash-home-buyer-website",
+  "version": "2.0.0",
+  "description": "Real Estate Lead Generation System with ClickSend SMS",
+  "main": "backend/Server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "setup": "node scripts/verify-system.js",
-    "create-admin": "node scripts/insert-admin-direct.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node backend/Server.js",
+    "dev": "nodemon backend/Server.js",
+    "init": "node backend/Init.js",
+    "test-sms": "node test-clicksend.js",
+    "test-email": "node backend/test-email.js"
   },
   "keywords": [
     "real-estate",
     "lead-generation",
-    "api"
+    "sms",
+    "clicksend",
+    "mongodb"
   ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@types/node": "^25.2.3",
     "bcryptjs": "^2.4.3",
+    "bluebird": "^3.7.2",
     "clicksend": "^5.0.79",
     "cors": "^2.8.5",
-    "dotenv": "^16.6.1",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
+    "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
-    "mongodb": "^7.1.0",
-    "mongoose": "^8.0.0",
+    "mongoose": "^7.6.3",
     "nodemailer": "^6.9.7",
-    "socket.io": "^4.8.3",
-    "twilio": "^5.12.1",
-    "typescript": "^5.9.3"
+    "request": "^2.88.2",
+    "socket.io": "^4.6.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
