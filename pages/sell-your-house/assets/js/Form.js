@@ -1,3 +1,4 @@
+//form.js frontend
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('leadCaptureForm');
     const steps = document.querySelectorAll('.form-step');

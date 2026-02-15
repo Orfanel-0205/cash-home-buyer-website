@@ -1,3 +1,4 @@
+//backend/test-email.js
 // ==========================================
 // 📧 EMAIL TEST SCRIPT
 // Run this with: node test-email.js

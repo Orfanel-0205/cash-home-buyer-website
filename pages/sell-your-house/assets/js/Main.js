@@ -1,5 +1,5 @@
 // ===========================
-// MAIN.JS - Common Functionality
+// MAIN.JS - Common Functionality frontend
 // ===========================
 
 document.addEventListener('DOMContentLoaded', function() {

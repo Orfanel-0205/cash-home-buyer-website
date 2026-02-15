@@ -1,3 +1,4 @@
+//backend/Server.js
 // ===========================
 // BACKEND SERVER - US CASH BUYERS
 // WITH EXPLICIT DNS FIX FOR NODE.JS
@@ -62,17 +63,21 @@ if (!MONGODB_URI) {
 // ==========================================
 // 📧 EMAIL CONFIG CHECK
 // ==========================================
+// Auto-fix: Trim spaces from credentials to prevent "Missing credentials" errors
+if (process.env.EMAIL_USER) process.env.EMAIL_USER = process.env.EMAIL_USER.trim();
+if (process.env.EMAIL_PASS) process.env.EMAIL_PASS = process.env.EMAIL_PASS.trim();
+
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.warn('⚠️  EMAIL_USER or EMAIL_PASS missing in .env. Emails will not send.');
-} else if (process.env.EMAIL_PASS.includes(' ')) {
-    console.error('❌ CRITICAL ERROR: EMAIL_PASS in .env contains spaces! Please remove them.');
+} else {
+    console.log('✅ Email credentials loaded for:', process.env.EMAIL_USER);
 }
 
 // ==========================================
 // 📱 SMS CONFIG CHECK
 // ==========================================
-if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
-    console.warn('⚠️  TWILIO credentials missing in .env. SMS will not send.');
+if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY || !process.env.CLICKSEND_FROM_NUMBER) {
+    console.warn('⚠️  CLICKSEND credentials missing in .env. SMS will not send.');
 }
 
 // ==========================================
