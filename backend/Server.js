@@ -60,7 +60,23 @@ if (!MONGODB_URI) {
 }
 
 // ==========================================
-// 🛡️ SECURITY MIDDLEWARE
+// 📧 EMAIL CONFIG CHECK
+// ==========================================
+if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️  EMAIL_USER or EMAIL_PASS missing in .env. Emails will not send.');
+} else if (process.env.EMAIL_PASS.includes(' ')) {
+    console.error('❌ CRITICAL ERROR: EMAIL_PASS in .env contains spaces! Please remove them.');
+}
+
+// ==========================================
+// 📱 SMS CONFIG CHECK
+// ==========================================
+if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN || !process.env.TWILIO_PHONE_NUMBER) {
+    console.warn('⚠️  TWILIO credentials missing in .env. SMS will not send.');
+}
+
+// ==========================================
+// �️ SECURITY MIDDLEWARE
 // ==========================================
 
 app.use(helmet({
@@ -84,6 +100,14 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,
 });
 app.use('/api/', apiLimiter);
+
+// ==========================================
+// 🔍 REQUEST LOGGER (Debug)
+// ==========================================
+app.use((req, res, next) => {
+    console.log(`📨 ${req.method} ${req.url}`);
+    next();
+});
 
 // ==========================================
 // 🗄️ DATABASE CONNECTION
@@ -161,6 +185,13 @@ mongoose.connection.on('connected', () => {
 // Start connection attempt
 connectDB();
 
+const http = require('http');
+const server = http.createServer(app);
+const { Server } = require("socket.io");
+const io = new Server(server);
+
+app.set('socketio', io);
+
 // ==========================================
 // 🚀 API ROUTES
 // ==========================================
@@ -175,6 +206,59 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/leads', require('./routes/leads'));
+app.use('/api', require('./routes/sms'));
+
+// ==========================================
+// 🔍 SEO ROUTES (Sitemap & Robots)
+// ==========================================
+
+app.get('/sitemap.xml', (req, res) => {
+    const baseUrl = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc>${baseUrl}/</loc>
+        <lastmod>${currentDate}</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+    <url>
+        <loc>${baseUrl}/pages/sell-your-house/sell.html</loc>
+        <lastmod>${currentDate}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+</urlset>`;
+    
+    res.header('Content-Type', 'application/xml');
+    res.send(sitemap);
+});
+
+app.get('/robots.txt', (req, res) => {
+    const baseUrl = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
+    const robots = `User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /pages/admin/
+Sitemap: ${baseUrl}/sitemap.xml`;
+    
+    res.header('Content-Type', 'text/plain');
+    res.send(robots);
+});
+
+// ==========================================
+// ⚠️ GLOBAL ERROR HANDLER
+// ==========================================
+app.use((err, req, res, next) => {
+    console.error('❌ Global Error Handler:', err);
+    res.status(500).json({ 
+        success: false, 
+        message: 'Internal Server Error',
+        error: err.message 
+    });
+});
 
 // ==========================================
 // 🌐 STATIC FILES
@@ -193,12 +277,19 @@ app.get('*', (req, res) => {
 // 🚀 START SERVER
 // ==========================================
 
-const server = app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`    🚀 Server running on http://localhost:${PORT}`);
     console.log(`    📁 Serving static files`);
     console.log(`    🌐 Admin: http://localhost:${PORT}/pages/admin/admin-login.html`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+});
+
+io.on('connection', (socket) => {
+    console.log('✅ a user connected');
+    socket.on('disconnect', () => {
+        console.log('🔥 user disconnected');
+    });
 });
 
 // Graceful shutdown

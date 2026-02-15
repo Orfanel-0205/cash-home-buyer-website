@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /pages/admin/
+Sitemap: https://www.homeselldirect.com/sitemap.xml

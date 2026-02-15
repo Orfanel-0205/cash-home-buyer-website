@@ -8,6 +8,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Lead = require('../models/Lead');
 const { sendLeadConfirmation, sendAdminNotification } = require('../utils/email');
+const { sendAdminSmsNotification, sendLeadSmsConfirmation } = require('../utils/sms');
 
 // ===========================
 // VALIDATION MIDDLEWARE
@@ -21,7 +22,7 @@ const leadValidation = [
     body('timeframe').notEmpty().withMessage('Timeframe is required'),
     body('fullName').notEmpty().trim().withMessage('Full name is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('phone').matches(/^\d{10,}$/).withMessage('Valid 10-digit phone number is required'),
+    body('phone').matches(/^\+?\d{10,}$/).withMessage('Valid phone number is required'),
     body('preferredContact').isIn(['Phone', 'Email', 'Text']).withMessage('Invalid contact preference')
 ];
 
@@ -70,6 +71,10 @@ router.post('/', leadValidation, async (req, res) => {
         // Save to database
         const lead = new Lead(leadData);
         await lead.save();
+
+        // Emit a socket event for new lead
+        const io = req.app.get('socketio');
+        io.emit('new_lead', lead);
         
         // Send confirmation email to seller
         try {
@@ -85,6 +90,20 @@ router.post('/', leadValidation, async (req, res) => {
         } catch (emailError) {
             console.error('Error sending admin notification:', emailError);
             // Don't fail the request if email fails
+        }
+
+        // Send confirmation SMS to seller if they consented
+        try {
+            await sendLeadSmsConfirmation(lead);
+        } catch (smsError) {
+            console.error('Error sending confirmation SMS:', smsError);
+        }
+
+        // Send notification SMS to admin
+        try {
+            await sendAdminSmsNotification(lead);
+        } catch (smsError) {
+            console.error('Error sending admin notification SMS:', smsError);
         }
         
         // Return success response

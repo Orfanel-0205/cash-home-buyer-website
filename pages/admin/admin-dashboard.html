@@ -178,6 +178,7 @@
         </div>
     </div>
     
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
         const token = localStorage.getItem('adminToken');
         const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
@@ -186,6 +187,48 @@
         if (!token) {
             window.location.href = 'admin-login.html';
         }
+
+        // Socket.io connection
+        const socket = io("http://localhost:5000");
+
+        socket.on('connect', () => {
+            console.log('Connected to socket server');
+        });
+
+        socket.on('new_lead', (lead) => {
+            console.log('New lead received:', lead);
+            // 1. Show a browser notification
+            if (Notification.permission === "granted") {
+                new Notification("New Lead Received!", {
+                    body: `${lead.fullName} from ${lead.propertyAddress}`,
+                });
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification("New Lead Received!", {
+                            body: `${lead.fullName} from ${lead.propertyAddress}`,
+                        });
+                    }
+                });
+            }
+
+            // 2. Add lead to top of table
+            const tbody = document.getElementById('leadsBody');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td>${new Date(lead.submittedAt).toLocaleDateString()}</td>
+                <td>${lead.fullName}</td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${lead.propertyAddress}</td>
+                <td class="priority-${lead.priority.toLowerCase()}">${lead.priority}</td>
+                <td><span class="status-badge status-new">New</span></td>
+                <td><a href="tel:${lead.phone}">${lead.phone}</a></td>
+                <td><button class="btn-view" onclick="viewLead('${lead._id}')">View</button></td>
+            `;
+            tbody.prepend(newRow);
+
+            // 3. Update stats
+            loadStats();
+        });
         
         document.getElementById('userName').textContent = user.fullName || user.username;
         
