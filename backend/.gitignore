@@ -1,7 +1,4 @@
 # Ignore environment variables file
 .env
 .env.local
-Server.js
-package-lock.json
-package.json
-node_modules/
+
