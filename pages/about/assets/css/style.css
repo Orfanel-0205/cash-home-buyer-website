@@ -109,6 +109,7 @@ ul {
     align-items: center;
     padding: 1rem 0;
 }
+
 .logo {
     display: flex;
     align-items: center;
@@ -126,7 +127,6 @@ ul {
     background-size: contain;
     display: inline-block;
 }
-
 
 
 .nav-links {
@@ -358,7 +358,7 @@ ul {
 }
 
 .btn-secondary {
-    background: transparent;
+    background: #2e3f39;
     color: var(--bg-white);
     border: 2px solid var(--bg-white);
 }

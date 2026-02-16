@@ -2,14 +2,14 @@
   "name": "cash-home-buyer-website",
   "version": "2.0.0",
   "description": "Real Estate Lead Generation System with ClickSend SMS",
-  "main": "backend/Server.js",
+  "main": "Server.js",
   "scripts": {
-    "start": "node backend/Server.js",
-    "dev": "nodemon backend/Server.js",
-    "init": "node backend/Init.js",
-    "test-sms": "node test-clicksend.js",
-    "test-email": "node backend/test-email.js"
-  },
+  "start": "node backend/Server.js",
+  "dev": "nodemon backend/Server.js",
+  "init": "node backend/Init.js",
+  "test-sms": "node backend/test-clicksend.js",
+  "test-email": "node backend/test-email.js"
+},
   "keywords": [
     "real-estate",
     "lead-generation",

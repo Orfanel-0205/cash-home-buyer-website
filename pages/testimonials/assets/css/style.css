@@ -123,7 +123,7 @@ ul {
 .logo-icon {
     width: 90px;
     height: 90px;
-    background: url("../img/LOGO (2).png") no-repeat center center;
+    background: url("../../assets/img/LOGO (2).png") no-repeat center center;
     background-size: contain;
     display: inline-block;
 }

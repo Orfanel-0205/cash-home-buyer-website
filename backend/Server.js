@@ -1,5 +1,5 @@
 // ===========================
-// BACKEND SERVER - US CASH BUYERS
+// BACKEND SERVER - HOME SELL DIRECT
 // WITH EXPLICIT DNS FIX FOR NODE.JS
 // ===========================
 
@@ -194,7 +194,12 @@ connectDB();
 const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
 app.set('socketio', io);
 
@@ -269,6 +274,16 @@ app.use((err, req, res, next) => {
 // ==========================================
 // 🌐 STATIC FILES
 // ==========================================
+
+// 🛡️ SECURITY: Prevent access to backend source code and sensitive files
+app.use((req, res, next) => {
+    const forbiddenPaths = ['/backend', '/.env', '/node_modules', '/.git'];
+    // Check if the requested URL starts with any forbidden path
+    if (forbiddenPaths.some(forbidden => req.path.startsWith(forbidden))) {
+        return res.status(403).send('Forbidden');
+    }
+    next();
+});
 
 app.use(express.static(path.join(__dirname, '../')));
 
