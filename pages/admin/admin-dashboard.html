@@ -5,424 +5,536 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lead Dashboard | Admin</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        body { background: #f5f5f5; padding-bottom: 50px; }
-        
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --black:  #1A1A1A;
+            --grey:   #f5f5f5;
+            --border: #e8e8e8;
+            --text:   #444;
+            --red:    #D32F2F;
+            --green:  #2e7d32;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--grey); color: var(--black); padding-bottom: 60px; }
+
+        /* ── HEADER ── */
         .header {
-            background: #1A1A1A;
-            color: white;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .user-info { display: flex; align-items: center; gap: 1rem; }
-        .btn-logout {
-            background: #D32F2F; color: white; border: none; padding: 8px 16px;
-            border-radius: 4px; cursor: pointer; font-weight: 600;
-        }
-        
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        
-        .stats {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem; margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white; padding: 1.5rem; border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .stat-card h3 { color: #666; font-size: 0.9rem; margin-bottom: 0.5rem; }
-        .stat-card .number { font-size: 2rem; font-weight: bold; color: #1A1A1A; }
-        
-        .filters {
-            display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center;
-        }
-        select { padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
-        
-        .leads-table {
-            background: white; border-radius: 8px; overflow: hidden;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: #f9f9f9; font-weight: 600; color: #444; }
-        tr:hover { background: #f8f8f8; }
-        
-        .status-badge {
-            padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;
-        }
-        .status-new { background: #e3f2fd; color: #1565c0; }
-        .status-contacted { background: #fff3e0; color: #ef6c00; }
-        .status-under-review { background: #f3e5f5; color: #7b1fa2; }
-        .status-offer-made { background: #e8f5e9; color: #2e7d32; }
-        .status-closed { background: #2e7d32; color: white; }
-        .status-not-interested { background: #ffebee; color: #c62828; }
-        
-        .priority-high { color: #c62828; font-weight: bold; }
-        .priority-medium { color: #f57c00; }
-        .priority-low { color: #388e3c; }
-        
-        .btn-view {
-            background: #1A1A1A; color: white; border: none; padding: 6px 12px;
-            border-radius: 4px; cursor: pointer; font-size: 0.85rem;
-        }
-        
-        /* Modal */
-        .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
-            z-index: 1000;
-        }
-        .modal.show { display: flex; }
-        .modal-content {
-            background: white; width: 90%; max-width: 600px; max-height: 90vh;
-            overflow-y: auto; border-radius: 8px; padding: 2rem;
-            position: relative;
-        }
-        .modal-header {
+            background: var(--black); color: #fff;
+            padding: 0.9rem 2rem;
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 1rem;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
         }
-        .btn-close {
-            background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;
+        .header h1 { font-size: 1.1rem; font-weight: 700; }
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+        .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; display: inline-block; margin-right: 4px; }
+        .conn-dot.off { background: #f44336; }
+        .user-badge { font-size: 0.82rem; background: rgba(255,255,255,0.1); padding: 4px 12px; border-radius: 20px; }
+        .btn-logout { background: var(--red); color: #fff; border: none; padding: 7px 16px; border-radius: 5px; cursor: pointer; font-size: 0.82rem; font-weight: 700; }
+        .btn-logout:hover { background: #b71c1c; }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed; top: 68px; right: 20px;
+            background: var(--black); color: #fff;
+            padding: 14px 18px; border-radius: 8px;
+            font-size: 0.88rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            z-index: 9999; display: none; max-width: 320px;
+            border-left: 4px solid #4caf50;
+            animation: slideIn 0.3s ease;
         }
-        
-        .detail-row {
-            display: grid; grid-template-columns: 140px 1fr; gap: 1rem;
-            margin-bottom: 0.8rem; font-size: 0.95rem;
+        .toast.show { display: block; }
+        @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: none; opacity: 1; } }
+        .toast-title { font-weight: 700; margin-bottom: 3px; }
+        .toast-body  { font-size: 0.8rem; color: #ccc; }
+
+        /* ── CONTAINER ── */
+        .container { max-width: 1280px; margin: 2rem auto; padding: 0 1.5rem; }
+
+        /* ── TABS ── */
+        .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid var(--border); }
+        .tab {
+            padding: 10px 22px; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+            border: none; background: none; color: #888;
+            border-bottom: 2px solid transparent; margin-bottom: -2px;
+            transition: all 0.2s;
         }
-        .detail-label { color: #666; font-weight: 500; }
-        .detail-value { color: #1A1A1A; }
-        
-        .loading, .empty-state { padding: 3rem; text-align: center; color: #666; }
+        .tab.active { color: var(--black); border-bottom-color: var(--black); }
+        .tab:hover:not(.active) { color: #555; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ── STAT CARDS ── */
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+        .stat-card { background: #fff; padding: 1.4rem 1.5rem; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-bottom: 3px solid transparent; }
+        .stat-card:nth-child(1) { border-color: #1A1A1A; }
+        .stat-card:nth-child(2) { border-color: #1565c0; }
+        .stat-card:nth-child(3) { border-color: #4caf50; }
+        .stat-card:nth-child(4) { border-color: #f57c00; }
+        .stat-card h3 { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem; }
+        .stat-card .number { font-size: 2.2rem; font-weight: 700; }
+
+        /* ── TOOLBAR ── */
+        .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+        .toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; outline: none; background: #fff; }
+        .toolbar select:focus { border-color: var(--black); }
+        .btn-primary   { background: var(--black); color: #fff; border: none; padding: 8px 18px; border-radius: 6px; font-size: 0.88rem; cursor: pointer; font-weight: 700; }
+        .btn-primary:hover { background: #333; }
+        .btn-secondary { background: #fff; color: var(--black); border: 1px solid var(--border); padding: 8px 18px; border-radius: 6px; font-size: 0.88rem; cursor: pointer; font-weight: 600; }
+        .btn-secondary:hover { border-color: var(--black); }
+        .spacer { flex: 1; }
+
+        /* ── TABLE CARD ── */
+        .table-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: #fafafa; }
+        th { padding: 0.85rem 1rem; text-align: left; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 1px solid var(--border); }
+        td { padding: 0.85rem 1rem; font-size: 0.88rem; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #fafafa; }
+        tbody tr.flash { animation: flash 2s ease; }
+        @keyframes flash { from { background: #e8f5e9; } to { background: transparent; } }
+
+        .address-cell { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        a { color: inherit; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* badges */
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.74rem; font-weight: 700; }
+        .badge-new           { background: #e3f2fd; color: #1565c0; }
+        .badge-contacted     { background: #fff3e0; color: #ef6c00; }
+        .badge-under-review  { background: #f3e5f5; color: #7b1fa2; }
+        .badge-offer-made    { background: #e8f5e9; color: #2e7d32; }
+        .badge-closed        { background: #2e7d32; color: #fff; }
+        .badge-not-interested{ background: #ffebee; color: #c62828; }
+        .badge-success       { background: #e8f5e9; color: #2e7d32; }
+        .badge-fail          { background: #ffebee; color: #c62828; }
+
+        .priority-High   { color: #c62828; font-weight: 700; }
+        .priority-Medium { color: #ef6c00; font-weight: 600; }
+        .priority-Low    { color: #388e3c; }
+
+        .btn-view { background: var(--black); color: #fff; border: none; padding: 5px 13px; border-radius: 5px; cursor: pointer; font-size: 0.78rem; font-weight: 700; }
+        .btn-view:hover { background: #333; }
+
+        /* state boxes */
+        .state-box { padding: 4rem 1rem; text-align: center; color: #aaa; font-size: 0.92rem; }
+        .spinner { width: 30px; height: 30px; border: 3px solid #eee; border-top-color: var(--black); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── MODAL ── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.show { display: flex; }
+        .modal-box { background: #fff; width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; border-radius: 10px; padding: 2rem; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .modal-header h2 { font-size: 1.15rem; }
+        .btn-close { background: none; border: none; font-size: 1.6rem; cursor: pointer; color: #bbb; line-height: 1; }
+        .btn-close:hover { color: var(--black); }
+
+        .detail-grid { display: grid; grid-template-columns: 148px 1fr; gap: 0.55rem 1rem; font-size: 0.88rem; margin-bottom: 0.75rem; }
+        .dl { color: #888; font-weight: 600; }
+        .dv { color: var(--black); }
+        hr.sep { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+
+        .status-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; margin-top: 1.25rem; }
+        .status-row select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; outline: none; flex: 1; min-width: 140px; }
+
+        .notes-section { margin-top: 1.5rem; }
+        .notes-section h4 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #999; margin-bottom: 0.75rem; }
+        .note-item { background: #f9f9f9; border-radius: 6px; padding: 9px 12px; margin-bottom: 0.4rem; font-size: 0.86rem; }
+        .note-date { font-size: 0.74rem; color: #bbb; margin-top: 3px; }
+        .add-note { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+        .add-note input { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 0.88rem; outline: none; }
+        .add-note input:focus { border-color: var(--black); }
+
+        /* ── LOG TABLE specifics ── */
+        .log-ip   { font-family: monospace; font-size: 0.8rem; color: #888; }
+        .log-ua   { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.78rem; color: #aaa; }
+        .log-time { white-space: nowrap; font-size: 0.82rem; }
+
+        @media (max-width: 640px) {
+            .header { padding: 0.8rem 1rem; }
+            .container { padding: 0 0.75rem; }
+            th, td { padding: 0.65rem 0.6rem; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .dl { margin-bottom: -0.35rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📊 Lead Dashboard</h1>
-        <div class="user-info">
-            <span id="userName">Loading...</span>
-            <button class="btn-logout" onclick="logout()">Logout</button>
-        </div>
+
+<!-- HEADER -->
+<div class="header">
+    <h1>📊 HOME SELL DIRECT &nbsp;·&nbsp; Admin</h1>
+    <div class="header-right">
+        <span><span class="conn-dot" id="connDot"></span><span id="connLabel" style="font-size:0.78rem;color:#ccc">Connecting...</span></span>
+        <span class="user-badge" id="userName">–</span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
     </div>
-    
-    <div class="container">
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3>Total Leads</h3>
-                <div class="number" id="totalLeads">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>Today</h3>
-                <div class="number" id="todayLeads">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>New</h3>
-                <div class="number" id="newLeads">-</div>
-            </div>
-            <div class="stat-card">
-                <h3>In Progress</h3>
-                <div class="number" id="inProgressLeads">-</div>
-            </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-body"  id="toastBody"></div>
+</div>
+
+<!-- MAIN -->
+<div class="container">
+
+    <!-- TABS -->
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('leads', this)">🏠 Leads</button>
+        <button class="tab"        onclick="switchTab('logs',  this)">🔐 Login Logs</button>
+    </div>
+
+    <!-- ═══════════════ LEADS TAB ═══════════════ -->
+    <div class="tab-content active" id="tab-leads">
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat-card"><h3>Total Leads</h3><div class="number" id="statTotal">–</div></div>
+            <div class="stat-card"><h3>Today</h3><div class="number" id="statToday">–</div></div>
+            <div class="stat-card"><h3>New</h3><div class="number" id="statNew">–</div></div>
+            <div class="stat-card"><h3>In Progress</h3><div class="number" id="statInProg">–</div></div>
         </div>
-        
-        <div class="filters">
-            <select id="statusFilter" onchange="loadLeads()">
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <select id="fStatus" onchange="loadLeads()">
                 <option value="">All Status</option>
-                <option value="New">New</option>
-                <option value="Contacted">Contacted</option>
-                <option value="Under Review">Under Review</option>
-                <option value="Offer Made">Offer Made</option>
-                <option value="Closed">Closed</option>
+                <option>New</option><option>Contacted</option><option>Under Review</option>
+                <option>Offer Made</option><option>Closed</option><option>Not Interested</option>
             </select>
-            
-            <button class="btn-view" onclick="loadLeads()">Refresh</button>
+            <select id="fPriority" onchange="loadLeads()">
+                <option value="">All Priority</option>
+                <option>High</option><option>Medium</option><option>Low</option>
+            </select>
+            <button class="btn-secondary" onclick="loadLeads()">↻ Refresh</button>
+            <div class="spacer"></div>
+            <span style="font-size:0.8rem;color:#aaa" id="leadCount"></span>
         </div>
-        
-        <div class="leads-table">
-            <div id="loading" class="loading">Loading leads...</div>
-            <div id="emptyState" class="empty-state" style="display: none;">
-                No leads found
-            </div>
-            <table id="leadsTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Name</th>
-                        <th>Property</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                        <th>Contact</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="leadsBody">
-                </tbody>
+
+        <!-- Leads table -->
+        <div class="table-card">
+            <div class="state-box" id="leadsLoading"><div class="spinner"></div>Loading leads...</div>
+            <div class="state-box" id="leadsEmpty" style="display:none">No leads found.</div>
+            <table id="leadsTable" style="display:none">
+                <thead><tr>
+                    <th>Date</th><th>Name</th><th>Property</th>
+                    <th>Priority</th><th>Status</th><th>Phone</th><th></th>
+                </tr></thead>
+                <tbody id="leadsBody"></tbody>
             </table>
         </div>
     </div>
-    
-    <!-- Lead Detail Modal -->
-    <div id="leadModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Lead Details</h2>
-                <button class="btn-close" onclick="closeModal()">×</button>
-            </div>
-            <div id="leadDetails"></div>
+
+    <!-- ═══════════════ LOGIN LOGS TAB ═══════════════ -->
+    <div class="tab-content" id="tab-logs">
+        <div class="toolbar">
+            <button class="btn-secondary" onclick="loadLogs()">↻ Refresh</button>
+            <div class="spacer"></div>
+            <span style="font-size:0.8rem;color:#aaa" id="logCount"></span>
+        </div>
+
+        <div class="table-card">
+            <div class="state-box" id="logsLoading"><div class="spinner"></div>Loading logs...</div>
+            <div class="state-box" id="logsEmpty" style="display:none">No login logs yet.</div>
+            <table id="logsTable" style="display:none">
+                <thead><tr>
+                    <th>Date &amp; Time</th>
+                    <th>Email</th>
+                    <th>Result</th>
+                    <th>IP Address</th>
+                    <th>Browser / Device</th>
+                </tr></thead>
+                <tbody id="logsBody"></tbody>
+            </table>
         </div>
     </div>
-    
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-        const token = localStorage.getItem('adminToken');
-        const user = JSON.parse(localStorage.getItem('adminUser') || '{}');
-        
-        // Check authentication
-        if (!token) {
-            window.location.href = 'admin-login.html';
-        }
 
-        // Socket.io connection
-        const socket = io("http://localhost:5000");
+</div><!-- /container -->
 
-        socket.on('connect', () => {
-            console.log('Connected to socket server');
-        });
+<!-- LEAD DETAIL MODAL -->
+<div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2>Lead Details</h2>
+            <button class="btn-close" onclick="closeModal()">×</button>
+        </div>
+        <div id="modalBody"></div>
+    </div>
+</div>
 
-        socket.on('new_lead', (lead) => {
-            console.log('New lead received:', lead);
-            // 1. Show a browser notification
-            if (Notification.permission === "granted") {
-                new Notification("New Lead Received!", {
-                    body: `${lead.fullName} from ${lead.propertyAddress}`,
-                });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification("New Lead Received!", {
-                            body: `${lead.fullName} from ${lead.propertyAddress}`,
-                        });
-                    }
-                });
-            }
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+// ── Auth guard ──────────────────────────────────────────
+const token = localStorage.getItem('adminToken');
+const user  = JSON.parse(localStorage.getItem('adminUser') || '{}');
+if (!token) window.location.href = 'admin-login.html';
+document.getElementById('userName').textContent = user.fullName || user.username || 'Admin';
 
-            // 2. Add lead to top of table
-            const tbody = document.getElementById('leadsBody');
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${new Date(lead.submittedAt).toLocaleDateString()}</td>
-                <td>${lead.fullName}</td>
-                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${lead.propertyAddress}</td>
-                <td class="priority-${lead.priority.toLowerCase()}">${lead.priority}</td>
-                <td><span class="status-badge status-new">New</span></td>
-                <td><a href="tel:${lead.phone}">${lead.phone}</a></td>
-                <td><button class="btn-view" onclick="viewLead('${lead._id}')">View</button></td>
-            `;
-            tbody.prepend(newRow);
+// ── Socket.IO ───────────────────────────────────────────
+const socket = io(window.location.origin);
+socket.on('connect',    () => setConn(true));
+socket.on('disconnect', () => setConn(false));
+function setConn(on) {
+    document.getElementById('connDot').className   = 'conn-dot' + (on ? '' : ' off');
+    document.getElementById('connLabel').textContent = on ? 'Live' : 'Offline';
+}
+socket.on('new_lead', lead => {
+    showToast('🏠 New Lead!', `${lead.fullName} — ${lead.propertyAddress}`);
+    prependLeadRow(lead);
+    loadStats();
+});
 
-            // 3. Update stats
-            loadStats();
-        });
-        
-        document.getElementById('userName').textContent = user.fullName || user.username;
-        
-        // Load stats and leads on page load
-        loadStats();
-        loadLeads();
-        
-        async function loadStats() {
-            try {
-                const response = await fetch('/api/leads/stats/summary', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('totalLeads').textContent = data.data.total;
-                    document.getElementById('todayLeads').textContent = data.data.todayCount;
-                    
-                    const statusCounts = {};
-                    data.data.byStatus.forEach(s => {
-                        statusCounts[s._id] = s.count;
-                    });
-                    
-                    document.getElementById('newLeads').textContent = statusCounts['New'] || 0;
-                    const inProgress = (statusCounts['Contacted'] || 0) + 
-                                      (statusCounts['Under Review'] || 0) + 
-                                      (statusCounts['Offer Made'] || 0);
-                    document.getElementById('inProgressLeads').textContent = inProgress;
-                }
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
+// ── Tab switching ────────────────────────────────────────
+function switchTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'logs') loadLogs();
+}
+
+// ── Toast ────────────────────────────────────────────────
+let toastTimer;
+function showToast(title, body) {
+    clearTimeout(toastTimer);
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastBody').textContent  = body;
+    document.getElementById('toast').classList.add('show');
+    toastTimer = setTimeout(() => document.getElementById('toast').classList.remove('show'), 5000);
+    if (Notification.permission === 'granted') new Notification(title, { body });
+    else if (Notification.permission !== 'denied') Notification.requestPermission().then(p => { if (p === 'granted') new Notification(title, { body }); });
+}
+
+// ── API helper ───────────────────────────────────────────
+function api(url, opts = {}) {
+    return fetch(url, { ...opts, headers: { 'Authorization': `Bearer ${token}`, ...(opts.headers || {}) } });
+}
+
+// ── Stats ────────────────────────────────────────────────
+async function loadStats() {
+    try {
+        const data = await api('/api/leads/stats/summary').then(r => r.json());
+        if (!data.success) return;
+        document.getElementById('statTotal').textContent = data.data.total;
+        document.getElementById('statToday').textContent = data.data.todayCount;
+        const byS = {};
+        data.data.byStatus.forEach(s => byS[s._id] = s.count);
+        document.getElementById('statNew').textContent   = byS['New'] || 0;
+        document.getElementById('statInProg').textContent = (byS['Contacted']||0) + (byS['Under Review']||0) + (byS['Offer Made']||0);
+    } catch {}
+}
+
+// ── Leads ────────────────────────────────────────────────
+async function loadLeads() {
+    const [loadEl, emptyEl, tableEl, tbody] = ['leadsLoading','leadsEmpty','leadsTable','leadsBody'].map(id => document.getElementById(id));
+    loadEl.style.display = 'block'; emptyEl.style.display = 'none'; tableEl.style.display = 'none';
+
+    const p = new URLSearchParams({ limit: 200 });
+    const s = document.getElementById('fStatus').value;
+    const pr = document.getElementById('fPriority').value;
+    if (s)  p.append('status',   s);
+    if (pr) p.append('priority', pr);
+
+    try {
+        const data = await api(`/api/leads?${p}`).then(r => r.json());
+        loadEl.style.display = 'none';
+        if (data.success && data.data.length) {
+            document.getElementById('leadCount').textContent = `${data.data.length} lead${data.data.length !== 1 ? 's' : ''}`;
+            tableEl.style.display = 'table';
+            tbody.innerHTML = data.data.map(buildLeadRow).join('');
+        } else {
+            emptyEl.style.display = 'block';
+            document.getElementById('leadCount').textContent = '0 leads';
         }
-        
-        async function loadLeads() {
-            const loading = document.getElementById('loading');
-            const emptyState = document.getElementById('emptyState');
-            const table = document.getElementById('leadsTable');
-            const tbody = document.getElementById('leadsBody');
-            
-            loading.style.display = 'block';
-            emptyState.style.display = 'none';
-            table.style.display = 'none';
-            
-            const statusFilter = document.getElementById('statusFilter').value;
-            const params = new URLSearchParams();
-            if (statusFilter) params.append('status', statusFilter);
-            params.append('limit', '100');
-            
-            try {
-                const response = await fetch(`/api/leads?${params}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                loading.style.display = 'none';
-                
-                if (data.success && data.data.length > 0) {
-                    table.style.display = 'table';
-                    tbody.innerHTML = data.data.map(lead => `
-                        <tr>
-                            <td>${new Date(lead.submittedAt).toLocaleDateString()}</td>
-                            <td>${lead.fullName}</td>
-                            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${lead.propertyAddress}</td>
-                            <td class="priority-${lead.priority.toLowerCase()}">${lead.priority}</td>
-                            <td><span class="status-badge status-${lead.status.toLowerCase().replace(/ /g, '-')}">${lead.status}</span></td>
-                            <td><a href="tel:${lead.phone}">${lead.phone}</a></td>
-                            <td><button class="btn-view" onclick="viewLead('${lead._id}')">View</button></td>
-                        </tr>
-                    `).join('');
-                } else {
-                    emptyState.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Error loading leads:', error);
-                loading.textContent = 'Error loading leads';
-                if (error.status === 401) {
-                    logout();
-                }
-            }
+    } catch { loadEl.textContent = '⚠️ Error loading leads.'; }
+}
+
+function buildLeadRow(l) {
+    const date = new Date(l.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+    const bc   = 'badge-' + l.status.toLowerCase().replace(/ /g, '-');
+    return `<tr>
+        <td>${date}</td>
+        <td><strong>${esc(l.fullName)}</strong></td>
+        <td><span class="address-cell" title="${esc(l.propertyAddress)}">${esc(l.propertyAddress)}</span></td>
+        <td><span class="priority-${l.priority}">${l.priority}</span></td>
+        <td><span class="badge ${bc}">${l.status}</span></td>
+        <td><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a></td>
+        <td><button class="btn-view" onclick="viewLead('${l._id}')">View</button></td>
+    </tr>`;
+}
+
+function prependLeadRow(lead) {
+    const table = document.getElementById('leadsTable');
+    const tbody = document.getElementById('leadsBody');
+    if (table.style.display === 'none') {
+        document.getElementById('leadsEmpty').style.display = 'none';
+        table.style.display = 'table';
+    }
+    const tr = document.createElement('tr');
+    tr.className = 'flash';
+    tr.innerHTML = buildLeadRow(lead).replace(/^<tr[^>]*>/, '').replace(/<\/tr>$/, '');
+    tbody.prepend(tr);
+}
+
+// ── Login Logs ────────────────────────────────────────────
+async function loadLogs() {
+    const [loadEl, emptyEl, tableEl, tbody] = ['logsLoading','logsEmpty','logsTable','logsBody'].map(id => document.getElementById(id));
+    loadEl.style.display = 'block'; emptyEl.style.display = 'none'; tableEl.style.display = 'none';
+
+    try {
+        const data = await api('/api/admin/logs').then(r => r.json());
+        loadEl.style.display = 'none';
+
+        if (data.success && data.data.length) {
+            document.getElementById('logCount').textContent = `${data.total} log entries`;
+            tableEl.style.display = 'table';
+            tbody.innerHTML = data.data.map(log => {
+                const dt  = new Date(log.timestamp);
+                const dateStr = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                const badge   = log.success
+                    ? '<span class="badge badge-success">✓ Success</span>'
+                    : '<span class="badge badge-fail">✗ Failed</span>';
+                return `<tr>
+                    <td class="log-time">${dateStr}<br><span style="color:#aaa;font-size:0.78rem">${timeStr}</span></td>
+                    <td>${esc(log.email || '—')}</td>
+                    <td>${badge}</td>
+                    <td class="log-ip">${esc(log.ip || '—')}</td>
+                    <td class="log-ua" title="${esc(log.userAgent)}">${esc(log.userAgent || '—')}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            emptyEl.style.display = 'block';
+            document.getElementById('logCount').textContent = '0 entries';
         }
-        
-        async function viewLead(id) {
-            try {
-                const response = await fetch(`/api/leads/${id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const lead = data.data;
-                    document.getElementById('leadDetails').innerHTML = `
-                        <div class="detail-row">
-                            <div class="detail-label">Property Address</div>
-                            <div class="detail-value">${lead.propertyAddress}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Property Type</div>
-                            <div class="detail-value">${lead.propertyType}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Condition</div>
-                            <div class="detail-value">${lead.propertyCondition}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Bedrooms / Bathrooms</div>
-                            <div class="detail-value">${lead.bedrooms || 'N/A'} / ${lead.bathrooms || 'N/A'}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Selling Reason</div>
-                            <div class="detail-value">${lead.sellingReason}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Timeframe</div>
-                            <div class="detail-value"><strong>${lead.timeframe}</strong></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Mortgage Status</div>
-                            <div class="detail-value">${lead.oweMortgage || 'Not specified'}</div>
-                        </div>
-                        ${lead.additionalInfo ? `
-                        <div class="detail-row">
-                            <div class="detail-label">Additional Information</div>
-                            <div class="detail-value">${lead.additionalInfo}</div>
-                        </div>
-                        ` : ''}
-                        <hr style="margin: 20px 0;">
-                        <div class="detail-row">
-                            <div class="detail-label">Full Name</div>
-                            <div class="detail-value">${lead.fullName}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Email</div>
-                            <div class="detail-value"><a href="mailto:${lead.email}">${lead.email}</a></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Phone</div>
-                            <div class="detail-value"><a href="tel:${lead.phone}">${lead.phone}</a></div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">Preferred Contact</div>
-                            <div class="detail-value">${lead.preferredContact}</div>
-                        </div>
-                        <div class="detail-row">
-                            <div class="detail-label">SMS Consent</div>
-                            <div class="detail-value">${lead.smsConsent ? 'Yes ✓' : 'No'}</div>
-                        </div>
-                        ${lead.tracking.utm_source ? `
-                        <hr style="margin: 20px 0;">
-                        <div class="detail-row">
-                            <div class="detail-label">Traffic Source</div>
-                            <div class="detail-value">${lead.tracking.utm_source}</div>
-                        </div>
-                        ${lead.tracking.utm_campaign ? `
-                        <div class="detail-row">
-                            <div class="detail-label">Campaign</div>
-                            <div class="detail-value">${lead.tracking.utm_campaign}</div>
-                        </div>
-                        ` : ''}
-                        ` : ''}
-                    `;
-                    
-                    document.getElementById('leadModal').classList.add('show');
-                }
-            } catch (error) {
-                console.error('Error loading lead:', error);
-            }
+    } catch { loadEl.textContent = '⚠️ Error loading logs.'; }
+}
+
+// ── Lead Modal ────────────────────────────────────────────
+let currentId = null;
+
+async function viewLead(id) {
+    currentId = id;
+    try {
+        const data = await api(`/api/leads/${id}`).then(r => r.json());
+        if (!data.success) return;
+        const l = data.data;
+        const notes = (l.notes || []).map(n => `
+            <div class="note-item">
+                ${esc(n.text || n.content || '')}
+                <div class="note-date">${new Date(n.createdAt).toLocaleString()}</div>
+            </div>`).join('') || '<p style="color:#bbb;font-size:0.82rem">No notes yet.</p>';
+
+        document.getElementById('modalBody').innerHTML = `
+            <div class="detail-grid">
+                <span class="dl">Address</span>   <span class="dv">${esc(l.propertyAddress)}</span>
+                <span class="dl">Type</span>      <span class="dv">${esc(l.propertyType)}</span>
+                <span class="dl">Condition</span> <span class="dv">${esc(l.propertyCondition)}</span>
+                <span class="dl">Bed / Bath</span><span class="dv">${l.bedrooms||'—'} / ${l.bathrooms||'—'}</span>
+                <span class="dl">Selling Reason</span><span class="dv">${esc(l.sellingReason)}</span>
+                <span class="dl">Timeframe</span> <span class="dv"><strong>${esc(l.timeframe)}</strong></span>
+                <span class="dl">Mortgage</span>  <span class="dv">${esc(l.oweMortgage||'Not specified')}</span>
+                ${l.additionalInfo ? `<span class="dl">Additional</span><span class="dv">${esc(l.additionalInfo)}</span>` : ''}
+            </div>
+            <hr class="sep">
+            <div class="detail-grid">
+                <span class="dl">Name</span>  <span class="dv">${esc(l.fullName)}</span>
+                <span class="dl">Email</span> <span class="dv"><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></span>
+                <span class="dl">Phone</span> <span class="dv"><a href="tel:${esc(l.phone)}">${esc(l.phone)}</a></span>
+                <span class="dl">Preferred</span><span class="dv">${esc(l.preferredContact)}</span>
+                <span class="dl">SMS Consent</span><span class="dv">${l.smsConsent ? '✅ Yes' : '❌ No'}</span>
+            </div>
+            ${l.tracking?.utm_source ? `
+            <hr class="sep">
+            <div class="detail-grid">
+                <span class="dl">Source</span><span class="dv">${esc(l.tracking.utm_source)}</span>
+                ${l.tracking.utm_campaign ? `<span class="dl">Campaign</span><span class="dv">${esc(l.tracking.utm_campaign)}</span>` : ''}
+            </div>` : ''}
+            <hr class="sep">
+            <div class="status-row">
+                <select id="mStatus">
+                    ${['New','Contacted','Under Review','Offer Made','Closed','Not Interested'].map(s =>
+                        `<option ${s===l.status?'selected':''}>${s}</option>`).join('')}
+                </select>
+                <select id="mPriority">
+                    ${['High','Medium','Low'].map(p =>
+                        `<option ${p===l.priority?'selected':''}>${p}</option>`).join('')}
+                </select>
+                <button class="btn-primary" onclick="updateStatus()">Save</button>
+            </div>
+            <div class="notes-section">
+                <h4>Notes</h4>
+                <div id="notesList">${notes}</div>
+                <div class="add-note">
+                    <input type="text" id="noteInput" placeholder="Add a note…" onkeydown="if(event.key==='Enter')addNote()">
+                    <button class="btn-primary" onclick="addNote()">Add</button>
+                </div>
+            </div>`;
+
+        document.getElementById('modal').classList.add('show');
+    } catch (e) { console.error(e); }
+}
+
+async function updateStatus() {
+    const status   = document.getElementById('mStatus').value;
+    const priority = document.getElementById('mPriority').value;
+    try {
+        const data = await api(`/api/leads/${currentId}/status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, priority })
+        }).then(r => r.json());
+        if (data.success) { showToast('✅ Saved', 'Lead status updated.'); loadLeads(); }
+    } catch {}
+}
+
+async function addNote() {
+    const input = document.getElementById('noteInput');
+    const text  = input.value.trim();
+    if (!text) return;
+    try {
+        const data = await api(`/api/leads/${currentId}/notes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        }).then(r => r.json());
+        if (data.success) {
+            input.value = '';
+            const div = document.createElement('div');
+            div.className = 'note-item';
+            div.innerHTML = `${esc(text)}<div class="note-date">${new Date().toLocaleString()}</div>`;
+            document.getElementById('notesList').appendChild(div);
         }
-        
-        function closeModal() {
-            document.getElementById('leadModal').classList.remove('show');
-        }
-        
-        function logout() {
-            localStorage.removeItem('adminToken');
-            localStorage.removeItem('adminUser');
-            window.location.href = 'admin-login.html';
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('leadModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeModal();
-            }
-        });
-    </script>
+    } catch {}
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    currentId = null;
+    loadLeads();
+}
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ── Logout ────────────────────────────────────────────────
+function logout() {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminUser');
+    window.location.href = 'admin-login.html';
+}
+
+// ── XSS escape ────────────────────────────────────────────
+function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Bootstrap ─────────────────────────────────────────────
+loadStats();
+loadLeads();
+</script>
 </body>
 </html>

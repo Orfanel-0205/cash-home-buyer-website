@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             // Send to backend
-            const response = await fetch('http://localhost:5000/api/leads', {
+            const response = await fetch('/api/leads', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
