@@ -93,10 +93,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         
-        // Handle Checkbox manually
+        // ✅ FIX: Handle checkbox manually (CRITICAL!)
         data.smsConsent = form.querySelector('#smsConsent').checked;
         
-        // Add tracking info (if you have UTM params in URL)
+        // 🔍 DEBUG: Log the smsConsent value
+        console.log('📱 SMS Consent:', data.smsConsent);
+        console.log('📞 Phone Number:', data.phone);
+        
+        // Add tracking info
         const urlParams = new URLSearchParams(window.location.search);
         data.tracking = {
             utm_source: urlParams.get('utm_source') || '',
@@ -106,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            // IMPORTANT: Pointing to port 5000 where your backend is running
+            // Send to backend
             const response = await fetch('http://localhost:5000/api/leads', {
                 method: 'POST',
                 headers: {
@@ -120,13 +124,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.success) {
                 form.style.display = 'none';
                 successMessage.style.display = 'block';
-                // Scroll to top of message
                 formCard.scrollIntoView({ behavior: 'smooth' });
+                
+                // 🔍 DEBUG: Log success
+                console.log('✅ Form submitted successfully!');
             } else {
                 throw new Error(result.message || 'Submission failed');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('❌ Error:', error);
             form.style.display = 'none';
             errorMessage.style.display = 'block';
             document.getElementById('errorText').textContent = 'Connection error. Please ensure the server is running.';

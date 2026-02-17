@@ -10,23 +10,28 @@ const clicksendApi = axios.create({
     baseURL: 'https://rest.clicksend.com/v3',
     headers: {
         'Content-Type': 'application/json',
-        'Authorization': (username && apiKey) ? `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}` : ''
+        'Authorization': (username && apiKey)
+            ? `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`
+            : ''
     }
 });
 
 /**
  * Sends a single SMS message.
- * @param {string} to - The recipient's phone number in international format.
- * @param {string} message - The text message content.
- * @param {string|null} [from=null] - The sender ID. Defaults to .env setting or 'HomeSell'.
- * @returns {Promise<object>} A promise that resolves to a result object.
  */
 async function sendSMS(to, message, from = null) {
     try {
+        console.log('📱 sendSMS called with:', {
+            to,
+            messageLength: message?.length,
+            from
+        });
+
         if (!username || !apiKey) {
             throw new Error('ClickSend credentials are not configured in .env file.');
         }
-        // Use empty string by default to use ClickSend's shared number pool (better deliverability for trials)
+
+        // Use shared number pool by default (better for trial accounts)
         const fromNumber = from || process.env.CLICKSEND_FROM_NUMBER || '';
 
         const payload = {
@@ -38,8 +43,12 @@ async function sendSMS(to, message, from = null) {
             }]
         };
 
+        console.log('📤 Sending SMS payload:', JSON.stringify(payload, null, 2));
+
         const response = await clicksendApi.post('/sms/send', payload);
         const messageData = response.data.data.messages[0];
+
+        console.log('✅ SMS sent successfully:', messageData);
 
         return {
             success: true,
@@ -50,6 +59,13 @@ async function sendSMS(to, message, from = null) {
         };
     } catch (error) {
         const errorResponse = error.response?.data;
+
+        console.error('❌ SMS Error:', {
+            message: errorResponse?.response_msg || error.message,
+            code: errorResponse?.response_code || error.response?.status,
+            data: errorResponse
+        });
+
         return {
             success: false,
             error: errorResponse?.response_msg || error.message,
@@ -60,43 +76,65 @@ async function sendSMS(to, message, from = null) {
 
 /**
  * Sends a confirmation SMS to a new lead.
- * @param {object} lead - The lead object containing fullName, phone, propertyAddress, and smsConsent.
- * @returns {Promise<object>} The result from sendSMS.
  */
 async function sendLeadSmsConfirmation(lead) {
+    console.log('📱 sendLeadSmsConfirmation called for:', lead.fullName);
+    console.log('   Phone:', lead.phone);
+    console.log('   SMS Consent:', lead.smsConsent);
+
     if (!lead.smsConsent) {
-        console.warn(`SMS not sent to ${lead.fullName}: No SMS consent.`);
+        console.warn(`⚠️ SMS not sent to ${lead.fullName}: No SMS consent.`);
         return { success: false, error: 'User has not consented to SMS.' };
     }
-    const message = `Hi ${lead.fullName.split(' ')[0]}, this is Home Sell Direct. We've received your inquiry for ${lead.propertyAddress} and will be in touch shortly.`;
+
+    const firstName = lead.fullName.split(' ')[0];
+
+    const message =
+        `Hi ${firstName}, this is Home Sell Direct. ` +
+        `We've received your inquiry for ${lead.propertyAddress} ` +
+        `and will be in touch shortly.`;
+
+    console.log('📝 Message to send:', message);
+
     return sendSMS(lead.phone, message);
 }
 
 /**
  * Sends an SMS notification to the admin about a new lead.
- * @param {object} lead - The lead object containing fullName, phone, and propertyAddress.
- * @returns {Promise<object>} The result from sendSMS.
  */
 async function sendAdminSmsNotification(lead) {
     const adminPhone = process.env.ADMIN_PHONE;
+
+    console.log('📱 sendAdminSmsNotification called');
+    console.log('   Admin Phone:', adminPhone);
+
     if (!adminPhone) {
-        console.error('Admin SMS not sent: ADMIN_PHONE not set in .env');
+        console.error('❌ Admin SMS not sent: ADMIN_PHONE not set in .env');
         return { success: false, error: 'ADMIN_PHONE not set in .env' };
     }
-    const message = `New Lead: ${lead.fullName}, ${lead.phone}, Property: ${lead.propertyAddress}.`;
+
+    const message =
+        `New Lead: ${lead.fullName}, ${lead.phone}, ` +
+        `Property: ${lead.propertyAddress}.`;
+
+    console.log('📝 Admin message:', message);
+
     return sendSMS(adminPhone, message);
 }
 
 /**
- * Retrieves the current account balance from ClickSend.
- * @returns {Promise<object>} A promise that resolves to a result object with balance info.
+ * Retrieves ClickSend account balance.
  */
 async function getAccountBalance() {
     try {
         if (!username || !apiKey) {
             throw new Error('ClickSend credentials are not configured in .env file.');
         }
+
         const response = await clicksendApi.get('/account');
+
+        console.log('💰 Account balance retrieved:', response.data.data.balance);
+
         return {
             success: true,
             balance: response.data.data.balance,
@@ -104,6 +142,9 @@ async function getAccountBalance() {
         };
     } catch (error) {
         const errorResponse = error.response?.data;
+
+        console.error('❌ Balance check error:', errorResponse || error.message);
+
         return {
             success: false,
             error: errorResponse?.response_msg || error.message,
@@ -113,16 +154,14 @@ async function getAccountBalance() {
 }
 
 /**
- * Calculates the cost of sending an SMS message.
- * @param {string} to - The recipient's phone number.
- * @param {string} message - The message content.
- * @returns {Promise<object>} A promise that resolves to a result object with price info.
+ * Calculates SMS price before sending.
  */
 async function calculateSMSPrice(to, message) {
     try {
         if (!username || !apiKey) {
             throw new Error('ClickSend credentials are not configured in .env file.');
         }
+
         const payload = {
             messages: [{
                 to: to,
@@ -130,17 +169,24 @@ async function calculateSMSPrice(to, message) {
             }]
         };
 
+        console.log('💲 Calculating SMS price for:', to);
+
         const response = await clicksendApi.post('/sms/price', payload);
         const priceData = response.data.data;
+
+        console.log('💲 Price result:', priceData);
 
         return {
             success: true,
             price: priceData.total_price,
             currency: priceData._currency,
-            data: response.data.data,
+            data: priceData,
         };
     } catch (error) {
         const errorResponse = error.response?.data;
+
+        console.error('❌ SMS price error:', errorResponse || error.message);
+
         return {
             success: false,
             error: errorResponse?.response_msg || error.message,

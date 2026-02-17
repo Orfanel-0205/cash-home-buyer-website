@@ -218,7 +218,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/leads', require('./routes/leads'));
 app.use('/api', require('./routes/sms'));
-
+app.use('/api', require('./routes/testimonials'));
 // ==========================================
 // 🔍 SEO ROUTES (Sitemap & Robots)
 // ==========================================
