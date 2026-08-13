@@ -2,84 +2,71 @@
 // BACKEND SERVER - HOME SELL DIRECT
 // ===========================
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-// ==========================================
-// 🔧 CRITICAL DNS FIX - MUST BE FIRST!
-// ==========================================
-const dns = require('dns');
+const {
+    configureMongoDns,
+    getMongooseConnectOptions,
+    getTroubleshootingHints,
+    sanitizeErrorMessage,
+    validateMongoUri
+} = require('./config/database');
 
-console.log('📡 Current DNS servers:', dns.getServers());
+let mongoConfig;
+try {
+    mongoConfig = validateMongoUri(process.env.MONGODB_URI);
+    process.env.MONGODB_URI = mongoConfig.uri;
 
-dns.setServers([
-    '1.1.1.1',   // Cloudflare Primary
-    '1.0.0.1',   // Cloudflare Secondary
-    '8.8.8.8',   // Google Primary
-    '8.8.4.4'    // Google Secondary
-]);
-
-console.log('✅ DNS servers set to:', dns.getServers());
-console.log('');
-
-if (dns.setDefaultResultOrder) {
-    dns.setDefaultResultOrder('ipv4first');
-}
-
-// ==========================================
-// LOAD MODULES
-// ==========================================
-const express    = require('express');
-const mongoose   = require('mongoose');
-const cors       = require('cors');
-const helmet     = require('helmet');
-const rateLimit  = require('express-rate-limit');
-const mongoSanitize = require('express-mongo-sanitize');
-const path       = require('path');
-
-if (!process.env.JWT_SECRET) {
-    console.warn('⚠️  JWT_SECRET not found in .env, using default (NOT SECURE for production)');
-    process.env.JWT_SECRET = 'change_this_to_a_secure_random_string';
-}
-
-const Admin = require('./models/Admin');
-
-const app  = express();
-const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-    console.error('❌ MONGODB_URI not found in .env file!');
+    const dnsConfig = configureMongoDns(mongoConfig.isSrv);
+    console.log('MongoDB URI loaded for host:', mongoConfig.host);
+    console.log('MongoDB database:', mongoConfig.databaseName);
+    if (dnsConfig.changed) {
+        console.log('MongoDB SRV DNS resolvers:', dnsConfig.servers.join(', '));
+    }
+} catch (error) {
+    console.error('MongoDB configuration error:', sanitizeErrorMessage(error.message));
     process.exit(1);
 }
 
-// ==========================================
-// 📧 EMAIL CONFIG CHECK
-// ==========================================
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
+const http = require('http');
+const { Server } = require('socket.io');
+
+const Admin = require('./models/Admin');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = mongoConfig.uri;
+const maxAttempts = 3;
+
+if (!process.env.JWT_SECRET) {
+    console.warn('JWT_SECRET not found in .env, using default. Set a strong secret before production.');
+    process.env.JWT_SECRET = 'change_this_to_a_secure_random_string';
+}
+
 if (process.env.EMAIL_USER) process.env.EMAIL_USER = process.env.EMAIL_USER.trim();
 if (process.env.EMAIL_PASS) process.env.EMAIL_PASS = process.env.EMAIL_PASS.trim();
 
 if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️  EMAIL_USER or EMAIL_PASS missing in .env. Emails will not send.');
+    console.warn('EMAIL_USER or EMAIL_PASS missing in .env. Emails will not send.');
 } else {
-    console.log('✅ Email credentials loaded for:', process.env.EMAIL_USER);
+    console.log('Email credentials loaded for:', process.env.EMAIL_USER);
 }
 
-// ==========================================
-// 📱 SMS CONFIG CHECK (CLICKSEND)
-// ==========================================
 if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY) {
-    console.warn('⚠️  CLICKSEND credentials missing in .env. SMS will not send.');
+    console.warn('CLICKSEND credentials missing in .env. SMS will not send.');
 } else {
-    console.log('✅ ClickSend credentials loaded for:', process.env.CLICKSEND_USERNAME);
+    console.log('ClickSend credentials loaded for:', process.env.CLICKSEND_USERNAME);
 }
 
-// ==========================================
-// 🛡️ SECURITY MIDDLEWARE
-// ==========================================
 app.use(helmet({ contentSecurityPolicy: false }));
-
 app.use(cors({ origin: true, credentials: true }));
-
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize());
@@ -89,92 +76,16 @@ const apiLimiter = rateLimit({
     max: 100,
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
-    legacyHeaders: false,
+    legacyHeaders: false
 });
 app.use('/api/', apiLimiter);
 
-// ==========================================
-// 🔍 REQUEST LOGGER
-// ==========================================
 app.use((req, res, next) => {
-    console.log(`📨 ${req.method} ${req.url}`);
+    console.log(`${req.method} ${req.url}`);
     next();
 });
 
-// ==========================================
-// 🗄️ DATABASE CONNECTION
-// ==========================================
-let connectionAttempts = 0;
-const maxAttempts = 3;
-
-async function connectDB() {
-    try {
-        connectionAttempts++;
-        console.log(`🔌 MongoDB Connection Attempt ${connectionAttempts}/${maxAttempts}`);
-
-        await mongoose.connect(MONGODB_URI, {
-            serverSelectionTimeoutMS: 30000,
-            socketTimeoutMS: 45000,
-        });
-
-        console.log('\n✅ Connected to MongoDB Atlas!');
-        console.log('✓ Database:', mongoose.connection.name);
-        console.log('✓ Host:', mongoose.connection.host);
-
-        // ─────────────────────────────────────────
-        // Seed default admin if none exists
-        // Username: AdminHSD  |  Password: !0]hW/9dq)#S6;/
-        // ─────────────────────────────────────────
-        const adminCount = await Admin.countDocuments();
-        if (adminCount === 0) {
-            console.log('\n📝 No admin found, creating default admin...');
-            await Admin.create({
-                username: 'AdminHSD',
-                password: '!0]hW/9dq)#S6;/',
-                email: 'clifford020005@gmail.com',
-                fullName: 'System Administrator',
-                role: 'admin',
-                isActive: true
-            });
-            console.log('✅ Default admin created!');
-            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            console.log('Username : AdminHSD');
-            console.log('Password : !0]hW/9dq)#S6;/');
-            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-        } else {
-            console.log(`✓ Found ${adminCount} admin(s) in database\n`);
-        }
-
-    } catch (err) {
-        console.error('❌ MongoDB connection error:', err.message);
-
-        if (connectionAttempts < maxAttempts) {
-            console.log(`\n⏳ Retrying in 3 seconds...`);
-            setTimeout(connectDB, 3000);
-        } else {
-            console.error('\n❌ Failed to connect after', maxAttempts, 'attempts');
-            console.error('\n💡 Troubleshooting:');
-            console.error('   1. Check MONGODB_URI in .env');
-            console.error('   2. Verify Atlas allows 0.0.0.0/0');
-            console.error('   3. Check internet connection');
-            console.error('   4. Run: ipconfig /flushdns');
-            console.error('\n   DNS servers:', dns.getServers());
-        }
-    }
-}
-
-mongoose.connection.on('disconnected', () => console.warn('⚠️  MongoDB disconnected'));
-mongoose.connection.on('error', (err)  => console.error('❌ MongoDB error:', err.message));
-mongoose.connection.on('connected', ()  => console.log('✅ Mongoose connected successfully'));
-
-connectDB();
-
-// ==========================================
-// 🔌 SOCKET.IO
-// ==========================================
-const http = require('http');
 const server = http.createServer(app);
-const { Server } = require('socket.io');
 const io = new Server(server, {
     cors: { origin: '*', methods: ['GET', 'POST'] }
 });
@@ -182,32 +93,101 @@ const io = new Server(server, {
 app.set('socketio', io);
 
 io.on('connection', (socket) => {
-    console.log('✅ A user connected via WebSocket');
-    socket.on('disconnect', () => console.log('🔥 User disconnected'));
+    console.log('User connected via WebSocket');
+    socket.on('disconnect', () => console.log('User disconnected'));
 });
 
-// ==========================================
-// 🚀 API ROUTES
-// ==========================================
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function ensureAdminExists() {
+    const adminCount = await Admin.countDocuments();
+
+    if (adminCount > 0) {
+        console.log(`Found ${adminCount} admin(s) in database`);
+        return;
+    }
+
+    const { ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL } = process.env;
+    if (!ADMIN_USERNAME || !ADMIN_PASSWORD || !ADMIN_EMAIL) {
+        console.warn('No admin user exists. Set ADMIN_USERNAME, ADMIN_PASSWORD, and ADMIN_EMAIL, then run npm run init.');
+        return;
+    }
+
+    await Admin.create({
+        username: ADMIN_USERNAME,
+        password: ADMIN_PASSWORD,
+        email: ADMIN_EMAIL,
+        fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
+        role: 'admin',
+        isActive: true
+    });
+
+    console.log('Default admin created from environment credentials.');
+    console.log('Admin username:', ADMIN_USERNAME);
+    console.log('Admin email:', ADMIN_EMAIL);
+}
+
+async function connectDatabase() {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            console.log(`MongoDB connection attempt ${attempt}/${maxAttempts}`);
+
+            await mongoose.connect(MONGODB_URI, getMongooseConnectOptions());
+            const ping = await mongoose.connection.db.admin().ping();
+
+            if (!ping || ping.ok !== 1) {
+                throw new Error('MongoDB ping did not return ok: 1.');
+            }
+
+            console.log('Connected to MongoDB Atlas.');
+            console.log('Database:', mongoose.connection.name);
+            console.log('Host:', mongoose.connection.host);
+
+            await ensureAdminExists();
+            return;
+        } catch (err) {
+            await mongoose.disconnect().catch(() => {});
+            console.error('MongoDB connection error:', sanitizeErrorMessage(err.message));
+
+            if (attempt < maxAttempts) {
+                console.log('Retrying MongoDB connection in 3 seconds...');
+                await wait(3000);
+            } else {
+                console.error(`Failed to connect to MongoDB after ${maxAttempts} attempts.`);
+                console.error('Troubleshooting:');
+                getTroubleshootingHints(err, mongoConfig.isSrv).forEach((hint) => {
+                    console.error(`- ${hint}`);
+                });
+                throw err;
+            }
+        }
+    }
+}
+
+mongoose.connection.on('disconnected', () => console.warn('MongoDB disconnected'));
+mongoose.connection.on('error', (err) => console.error('MongoDB error:', sanitizeErrorMessage(err.message)));
+mongoose.connection.on('connected', () => console.log('Mongoose connected successfully'));
+
 app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    const connected = mongoose.connection.readyState === 1;
+
+    res.status(connected ? 200 : 503).json({
+        status: connected ? 'ok' : 'degraded',
+        database: connected ? 'connected' : 'disconnected',
         timestamp: new Date().toISOString()
     });
 });
 
-app.use('/api/admin',       require('./routes/admin'));
-app.use('/api/leads',       require('./routes/leads'));
-app.use('/api',             require('./routes/sms'));
-app.use('/api',             require('./routes/testimonials'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/leads', require('./routes/leads'));
+app.use('/api', require('./routes/sms'));
+app.use('/api', require('./routes/testimonials'));
 
-// ==========================================
-// 🔍 SEO ROUTES
-// ==========================================
 app.get('/sitemap.xml', (req, res) => {
     const baseUrl = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
-    const date    = new Date().toISOString().split('T')[0];
+    const date = new Date().toISOString().split('T')[0];
     res.header('Content-Type', 'application/xml');
     res.send(`<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -222,43 +202,62 @@ app.get('/robots.txt', (req, res) => {
     res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /pages/admin/\nSitemap: ${baseUrl}/sitemap.xml`);
 });
 
-// ==========================================
-// ⚠️ GLOBAL ERROR HANDLER
-// ==========================================
-app.use((err, req, res, next) => {
-    console.error('❌ Global Error Handler:', err);
-    res.status(500).json({ success: false, message: 'Internal Server Error', error: err.message });
-});
-
-// ==========================================
-// 🌐 STATIC FILES
-// ==========================================
 app.use((req, res, next) => {
     const forbidden = ['/backend', '/.env', '/node_modules', '/.git'];
-    if (forbidden.some(f => req.path.startsWith(f))) return res.status(403).send('Forbidden');
+    if (forbidden.some((folder) => req.path.startsWith(folder))) {
+        return res.status(403).send('Forbidden');
+    }
     next();
 });
 
 app.use(express.static(path.join(__dirname, '../')));
 
 app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/'))
+    if (req.path.startsWith('/api/')) {
         return res.status(404).json({ success: false, message: 'API endpoint not found' });
+    }
     res.sendFile(path.join(__dirname, '../index.html'));
 });
 
-// ==========================================
-// 🚀 START SERVER
-// ==========================================
-server.listen(PORT, () => {
-    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`    🚀 Server running  →  http://localhost:${PORT}`);
-    console.log(`    🌐 Admin Panel     →  http://localhost:${PORT}/pages/admin/admin-login.html`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+app.use((err, req, res, next) => {
+    console.error('Global Error Handler:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Internal Server Error',
+        error: err.message
+    });
 });
 
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('👋 SIGTERM received — shutting down gracefully');
-    server.close(() => mongoose.connection.close(false, () => process.exit(0)));
+async function startServer() {
+    try {
+        await connectDatabase();
+        server.listen(PORT, () => {
+            console.log(`Server running: http://localhost:${PORT}`);
+            console.log(`Admin panel: http://localhost:${PORT}/pages/admin/admin-login.html`);
+        });
+    } catch (error) {
+        console.error('Server not started because MongoDB connection failed.');
+        process.exit(1);
+    }
+}
+
+server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+        console.error(`Server port ${PORT} is already in use. Stop the process using that port or set a different PORT in .env.`);
+    } else {
+        console.error('Server error:', error.message);
+    }
+    process.exit(1);
 });
+
+function shutdown(signal) {
+    console.log(`${signal} received. Shutting down gracefully.`);
+    server.close(() => {
+        mongoose.connection.close(false, () => process.exit(0));
+    });
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+startServer();

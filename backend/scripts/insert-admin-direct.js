@@ -102,7 +102,7 @@ async function insertAdmin() {
             console.log('\n💡 DNS Connection Issue. Solutions:');
             console.log('   1. Check internet connection');
             console.log('   2. Verify MongoDB URI in .env file');
-            console.log('   3. Make sure MongoDB Atlas allows connections from 0.0.0.0/0');
+            console.log('   3. Make sure MongoDB Atlas allows connections from this machine's current public IP');
         }
         
         if (client) {

@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const result = await response.json();
 
-            if (result.success) {
+            if (response.ok && result.success) {
                 form.style.display = 'none';
                 successMessage.style.display = 'block';
                 formCard.scrollIntoView({ behavior: 'smooth' });
@@ -129,13 +129,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 🔍 DEBUG: Log success
                 console.log('✅ Form submitted successfully!');
             } else {
-                throw new Error(result.message || 'Submission failed');
+                const validationMessage = Array.isArray(result.errors) && result.errors.length
+                    ? result.errors.map(error => error.msg).join(' ')
+                    : '';
+                throw new Error(result.message || validationMessage || 'Submission failed');
             }
         } catch (error) {
             console.error('❌ Error:', error);
             form.style.display = 'none';
             errorMessage.style.display = 'block';
-            document.getElementById('errorText').textContent = 'Connection error. Please ensure the server is running.';
+            document.getElementById('errorText').textContent = error.message || 'Connection error. Please ensure the server is running.';
         }
     });
 });

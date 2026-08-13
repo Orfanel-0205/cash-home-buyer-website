@@ -22,7 +22,14 @@ const leadValidation = [
     body('timeframe').notEmpty().withMessage('Timeframe is required'),
     body('fullName').notEmpty().trim().withMessage('Full name is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-    body('phone').matches(/^\+?\d{10,}$/).withMessage('Valid phone number is required'),
+    body('phone')
+        .customSanitizer((value) => {
+            const raw = String(value || '').trim();
+            const digits = raw.replace(/\D/g, '');
+            return raw.startsWith('+') ? `+${digits}` : digits;
+        })
+        .matches(/^\+?\d{10,15}$/)
+        .withMessage('Valid phone number is required'),
     body('preferredContact').isIn(['Phone', 'Email', 'Text']).withMessage('Invalid contact preference')
 ];
 
