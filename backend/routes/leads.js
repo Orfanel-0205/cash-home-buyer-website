@@ -7,8 +7,9 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Lead = require('../models/Lead');
-const { sendLeadConfirmation, sendAdminNotification } = require('../utils/email');
+const { sendLeadConfirmation, sendAdminNotification } = require('../utils/Email');
 const { sendAdminSmsNotification, sendLeadSmsConfirmation } = require('../utils/sms');
+const { authMiddleware } = require('../middleware/Auth');
 
 // ===========================
 // VALIDATION MIDDLEWARE
@@ -133,7 +134,7 @@ router.post('/', leadValidation, async (req, res) => {
 // GET ALL LEADS (Protected - for admin dashboard)
 // ===========================
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const {
             status,
@@ -189,7 +190,7 @@ router.get('/', async (req, res) => {
 // GET SINGLE LEAD BY ID
 // ===========================
 
-router.get('/:id', async (req, res) => {
+router.get('/:id([0-9a-fA-F]{24})', authMiddleware, async (req, res) => {
     try {
         const lead = await Lead.findById(req.params.id);
         
@@ -218,7 +219,7 @@ router.get('/:id', async (req, res) => {
 // UPDATE LEAD STATUS
 // ===========================
 
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', authMiddleware, async (req, res) => {
     try {
         const { status, updatedBy } = req.body;
         
@@ -251,7 +252,7 @@ router.patch('/:id/status', async (req, res) => {
 // ADD NOTE TO LEAD
 // ===========================
 
-router.post('/:id/notes', async (req, res) => {
+router.post('/:id/notes', authMiddleware, async (req, res) => {
     try {
         const { content, createdBy } = req.body;
         
@@ -291,7 +292,7 @@ router.post('/:id/notes', async (req, res) => {
 // GET LEAD STATISTICS
 // ===========================
 
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', authMiddleware, async (req, res) => {
     try {
         const stats = await Lead.aggregate([
             {

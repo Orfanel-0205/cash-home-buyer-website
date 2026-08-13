@@ -31,7 +31,7 @@ async function runTests() {
     if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY) {
         console.error('❌ CLICKSEND_USERNAME or CLICKSEND_API_KEY missing in .env file!');
         console.error('\n💡 Add these to your .env file:');
-        console.error('   CLICKSEND_USERNAME=clifford020005@gmail.com');
+        console.error('   CLICKSEND_USERNAME=YOUR_CLICKSEND_USERNAME');
         console.error('   CLICKSEND_API_KEY=YOUR_API_KEY_FROM_CLICKSEND_DASHBOARD');
         console.error('   CLICKSEND_FROM_NUMBER=HomeSell');
         process.exit(1);

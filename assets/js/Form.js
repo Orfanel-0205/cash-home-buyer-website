@@ -1,5 +1,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('leadCaptureForm');
+    const quickForm = document.getElementById('quickLeadForm');
+    if (!form && quickForm) {
+        quickForm.addEventListener('submit', submitQuickInquiry);
+        return;
+    }
+    if (!form) return;
     const steps = document.querySelectorAll('.form-step');
     const nextBtns = document.querySelectorAll('.btn-next');
     const backBtns = document.querySelectorAll('.btn-back');
@@ -105,8 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            // IMPORTANT: Pointing to port 5000 where your backend is running
-            const response = await fetch('http://localhost:5000/api/leads', {
+            const response = await fetch('/api/inquiry', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -131,4 +136,21 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('errorText').textContent = 'Connection error. Please ensure the server is running.';
         }
     });
+
+    async function submitQuickInquiry(event) {
+        event.preventDefault();
+        const data = Object.fromEntries(new FormData(quickForm).entries());
+        try {
+            const response = await fetch('/api/inquiry', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || 'Submission failed.');
+            quickForm.innerHTML = '<p role="status">Thank you! Your inquiry has been received.</p>';
+        } catch (error) {
+            alert(error.message || 'We could not submit your inquiry. Please try again.');
+        }
+    }
 });

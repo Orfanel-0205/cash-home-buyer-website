@@ -1,122 +1,93 @@
-<a name="readme-top">
+# Home Sell Direct
 
-<br/>
+A Vanilla HTML/CSS/JavaScript lead-generation site with a Vercel serverless inquiry endpoint and MongoDB Atlas storage. A custom domain and SMS provider are not required to launch.
 
-<br />
-<div align="center">
-  <a href="https://github.com/zyx-0314/">
-  <!-- TODO: If you want to add logo or banner you can add it here -->
-   "100">
-  </a>
-<!-- TODO: Change Title to the name of the title of your Project -->
-  <h3 align="center">Title</h3>
-</div>
-<!-- TODO: Make a short description -->
-<div align="center">
-  Short Description. (Optional)
-</div>
+## How inquiries work
 
-<br />
+The public forms submit JSON to `POST /api/inquiry`. The server validates and normalizes the property/contact fields, stores a document in the existing MongoDB `leads` collection, and only then calls the optional notification boundary in `lib/notifications.js`. Missing notification credentials—or a future notification failure—do not discard a saved inquiry.
 
-<!-- TODO: Change the zyx-0314 into your github username  -->
-<!-- TODO: Change the WD-Template-Project into the same name of your folder -->
-![](https://visit-counter.vercel.app/counter.png?page=zyx-0314/WD-Template-Project)
+Secrets are read only by server-side code. Never put `MONGODB_URI` or notification credentials in HTML or browser JavaScript.
 
-[![wakatime](https://wakatime.com/badge/user/018dd99a-4985-4f98-8216-6ca6fe2ce0f8/project/63501637-9a31-42f0-960d-4d0ab47977f8.svg)](https://wakatime.com/badge/user/018dd99a-4985-4f98-8216-6ca6fe2ce0f8/project/63501637-9a31-42f0-960d-4d0ab47977f8)
+## Local development
 
----
+Requirements: Node.js 20 or newer and a MongoDB Atlas database.
 
-<br />
-<br />
+1. Install both sets of dependencies:
 
-<!-- TODO: If you want to add more layers for your readme -->
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#overview">Overview</a>
-      <ol>
-        <li>
-          <a href="#key-components">Key Components</a>
-        </li>
-        <li>
-          <a href="#technology">Technology</a>
-        </li>
-      </ol>
-    </li>
-    <li>
-      <a href="#rule,-practices-and-principles">Rules, Practices and Principles</a>
-    </li>
-    <li>
-      <a href="#resources">Resources</a>
-    </li>
-  </ol>
-</details>
+   ```powershell
+   npm.cmd install
+   npm.cmd --prefix backend install
+   ```
 
----
+2. Copy `backend/.env.example` to `backend/.env`.
+3. In MongoDB Atlas, create a database user, note its password, and add your current public IP under Network Access. In Atlas, choose Connect > Drivers and copy the Node.js connection string.
+4. Replace the connection string placeholders in `backend/.env`. Include a database name after `.net/`:
 
-## Overview
+   ```dotenv
+   MONGODB_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
+   ```
 
-<!-- TODO: To be changed -->
-<!-- The following are just sample -->
-Description of the project in details.
+   Do not keep `<username>`, `<password>`, or other angle brackets in the real value. URL-encode reserved characters in credentials (for example `@` becomes `%40`, `:` becomes `%3A`, `/` becomes `%2F`, `?` becomes `%3F`, `#` becomes `%23`, `[` becomes `%5B`, `]` becomes `%5D`, and `%` becomes `%25`). Atlas can generate the host portion, but only you can supply the database user password.
 
-Guiding Question:
-- What is the project
-- Whats the purpose
-- What are key components
-- What technology used and how it is used
+5. Start the local Express development server:
 
-### Key Components
-<!-- TODO: List of Key Components -->
-<!-- The following are just sample -->
-- MultiPage Website/Single Page Website
-- Parallax transition
-- Transactional
+   ```powershell
+   npm.cmd run dev
+   ```
 
-### Technology
-<!-- TODO: List of Technology Used -->
-![HTML](https://img.shields.io/badge/HTML-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS](https://img.shields.io/badge/CSS-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=white)
+6. Open `http://localhost:5000`. The local server exposes the same `/api/inquiry` handler used by Vercel.
 
-## Rules, Practices and Principles
-1. Always use `WD-` in the front of the Title of the Project for the Subject followed by your custom naming.
-2. Do not rename any .html files; always use `index.html` as the filename.
-3. Place Files in their respective folders.
-4. All file naming are in camel case.
-   - Camel case is naming format where there is no white space in separation of each words, the first word is in all lower case while the succeding words first letter are in upper followed by lower cased letters.
-   - ex.: buttonAnimatedStyle.css
-5. Use only `External CSS`.
-6. Renaming of Pages folder names are a must, and relates to what it is doing or data it holding.
-7. File Structure to follow below.
+An absent, placeholder, incorrectly encoded, or unauthorized `MONGODB_URI` produces a configuration/connection error. The application cannot complete a real database write until valid Atlas credentials and Network Access are configured.
 
-```
-WD-ProjectName
-└─ assets
-|   └─ css
-|   |   └─ style.css
-|   └─ img
-|   |   └─ fileWith.jpeg/.jpg/.webp/.png
-|   └─ js
-|       └─ script.js
-└─ pages
-|  └─ pageName
-|     └─ assets
-|     |  └─ css
-|     |  |  └─ style.css
-|     |  └─ img
-|     |  |  └─ fileWith.jpeg/.jpg/.webp/.png
-|     |  └─ js
-|     |     └─ script.js
-|     └─ index.html
-└─ index.html
-└─ readme.md
+## API example
+
+```powershell
+$body = @{
+  name = 'Test Seller'
+  phone = '5551234567'
+  email = 'seller@example.com'
+  address = '123 Main Street'
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri 'http://localhost:5000/api/inquiry' -ContentType 'application/json' -Body $body
 ```
 
-## Resources
+The full sell-your-house form also sends its property type, condition, bedroom/bathroom counts, selling reason, timeframe, mortgage response, notes, contact preference, consent, and campaign tracking fields.
 
-<!-- TODO: Add References -->
-| Title | Purpose | Link |
-|-|-|-|
-| Sample Title | Sample purpose would be here like this and this is the example of what it is. | trykolang.com |
+## Deploy to Vercel
+
+1. Commit the source (never `backend/.env` or any other `.env` file) and push it to a GitHub repository.
+2. In Vercel, select Add New > Project, import the repository, and leave the framework preset as Other.
+3. In Project Settings > Environment Variables, add `MONGODB_URI` with the valid Atlas string. Select Production and any Preview/Development environments that should write to the database.
+4. Ensure Atlas Network Access permits Vercel connections. For serverless deployments, use an Atlas-supported access strategy appropriate to your security requirements; narrowly scoped access is preferable when available.
+5. Deploy. Vercel serves the static site and `api/inquiry.js` as a serverless function.
+6. Visit the generated `https://project-name.vercel.app` address and submit a test inquiry. Confirm the record in Atlas (the `leads` collection), and test the endpoint directly at `https://project-name.vercel.app/api/inquiry`.
+
+No domain is needed for this workflow. Later, add the client's domain under Vercel Project Settings > Domains and follow Vercel's DNS instructions; the relative `/api/inquiry` URL continues to work unchanged.
+
+The pre-existing Express/Socket.IO admin system remains available during local development but is not part of this serverless deployment. `backend` and `pages/admin` are excluded from the Vercel upload; the public inquiry flow and Atlas storage do not depend on them.
+
+## Security and abuse prevention
+
+The endpoint has a 12 KB request limit, field allowlists, length limits, normalization, safe visitor errors, and support for a hidden `website` honeypot field. Database errors and secrets are not returned to visitors.
+
+An in-memory rate limiter is intentionally not used for the serverless endpoint because separate function instances do not share reliable state. Before high-volume promotion, configure Vercel Firewall/rate limiting or add a shared service such as a Redis-backed limiter. `TURNSTILE_SECRET_KEY`, `RATE_LIMIT_API_URL`, and `RATE_LIMIT_API_TOKEN` are reserved in `.env.example` for a future server-side bot/rate-limit integration; none is mandatory now.
+
+## Adding SMS later
+
+SMS is intentionally disabled. `lib/notifications.js` is the single provider boundary. After choosing a provider:
+
+1. Implement a provider adapter there (or call a new provider-specific module from it).
+2. Add `SMS_API_KEY`, `SMS_API_SECRET`, `SMS_SENDER`, and `CLIENT_PHONE` in Vercel Environment Variables and locally if needed.
+3. Redeploy.
+
+The frontend, `/api/inquiry`, MongoDB database, Vercel domain, and saved leads do not need to be recreated. Keep notification errors isolated so the inquiry save remains the source of submission success.
+
+## Relevant files
+
+- `api/inquiry.js` — Vercel-compatible HTTP function
+- `lib/inquiry.js` — validation and normalization
+- `lib/mongodb.js` — cached MongoDB connection for warm serverless invocations
+- `lib/notifications.js` — optional future provider boundary
+- `backend/Server.js` — local Express/admin server
+- `.env.example` and `backend/.env.example` — safe configuration templates

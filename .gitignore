@@ -1,0 +1,15 @@
+node_modules/
+backend/node_modules/
+
+# Local secrets (keep examples committed)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Local runtime output
+*.log
+.vercel/
+

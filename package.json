@@ -1,0 +1,16 @@
+{
+  "name": "cash-home-buyer-website",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix backend run dev",
+    "start": "npm --prefix backend start",
+    "test": "node --test test/inquiry.test.js"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "dependencies": {
+    "mongodb": "^7.5.0"
+  }
+}

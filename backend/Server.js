@@ -180,6 +180,8 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Same handler used by Vercel; retained here for convenient local development.
+app.all('/api/inquiry', require('../api/inquiry'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/leads', require('./routes/leads'));
 app.use('/api', require('./routes/sms'));
@@ -223,8 +225,7 @@ app.use((err, req, res, next) => {
     console.error('Global Error Handler:', err);
     res.status(500).json({
         success: false,
-        message: 'Internal Server Error',
-        error: err.message
+        message: 'Internal Server Error'
     });
 });
 

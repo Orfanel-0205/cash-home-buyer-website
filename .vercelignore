@@ -1,0 +1,7 @@
+node_modules/
+backend/
+test/
+pages/admin/
+*.log
+.env
+.env.*
