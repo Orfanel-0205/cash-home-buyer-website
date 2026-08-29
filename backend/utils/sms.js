@@ -69,6 +69,27 @@ async function sendSMS(to, message, from = null) {
         const response = await clicksendApi.post('/sms/send', payload);
         const messageData = response.data.data.messages[0];
 
+        // ClickSend answers HTTP 200 even when it refuses to send: the outcome is
+        // in the per-message status. INSUFFICIENT_CREDIT, for one, means nothing
+        // was delivered, so reporting success here would hide a dead alert path.
+        const accepted = messageData.status === 'SUCCESS';
+
+        if (!accepted) {
+            console.error(`❌ SMS not delivered (${messageData.status}) to ${to}:`, {
+                status: messageData.status,
+                messageId: messageData.message_id,
+                price: messageData.message_price
+            });
+
+            return {
+                success: false,
+                error: `ClickSend rejected the message: ${messageData.status}`,
+                status: messageData.status,
+                messageId: messageData.message_id,
+                data: response.data
+            };
+        }
+
         console.log('✅ SMS sent successfully:', messageData);
 
         return {
