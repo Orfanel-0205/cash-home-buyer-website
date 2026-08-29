@@ -189,6 +189,10 @@ async function ensureAdminExists() {
 
     if (adminCount > 0) {
         console.log(`Found ${adminCount} admin(s) in database`);
+        // Bootstrap only. Editing ADMIN_* in a hosting dashboard after this
+        // point changes nothing, which reads as 'Invalid credentials' at login.
+        console.log('  Admin accounts already exist, so ADMIN_USERNAME / ADMIN_EMAIL / ADMIN_PASSWORD are ignored.');
+        console.log('  To change them, run: node scripts/set-admin.js <username> <email> <password>');
         return;
     }
 

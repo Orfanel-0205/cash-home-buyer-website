@@ -8,7 +8,8 @@
     "dev": "nodemon Server.js",
     "init": "node Init.js",
     "test-sms": "node test-sms.js",
-    "test-email": "node test-email.js"
+    "test-email": "node test-email.js",
+    "set-admin": "node scripts/set-admin.js"
   },
   "keywords": [
     "real-estate",
