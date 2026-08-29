@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /pages/admin/
 Disallow: /pages/thank-you/
-Sitemap: https://michiganpropertybuyers.vercel.app/sitemap.xml
+Sitemap: https://metromichiganpropertybuyers.vercel.app/sitemap.xml

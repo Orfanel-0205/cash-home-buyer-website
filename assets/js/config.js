@@ -12,7 +12,7 @@
 //   4. PRODUCTION_API_BASE_URL  - the deployed Render URL below
 //
 // Live API: https://cash-home-buyer-website.onrender.com (Render)
-// Live site: https://michiganpropertybuyers.vercel.app (Vercel)
+// Live site: https://metromichiganpropertybuyers.vercel.app (Vercel)
 // Leaving it empty falls back to same-origin requests, which is correct when the
 // Express server is also serving these pages.
 
