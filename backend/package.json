@@ -4,12 +4,12 @@
   "description": "Real Estate Lead Generation System with ClickSend SMS",
   "main": "Server.js",
   "scripts": {
-  "start": "node Server.js",
-  "dev": "nodemon Server.js",
-  "init": "node Init.js",
-  "test-sms": "node test-sms.js",
-  "test-email": "node test-email.js"
-},
+    "start": "node Server.js",
+    "dev": "nodemon Server.js",
+    "init": "node Init.js",
+    "test-sms": "node test-sms.js",
+    "test-email": "node test-email.js"
+  },
   "keywords": [
     "real-estate",
     "lead-generation",
@@ -20,7 +20,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@supabase/server": "^1.4.1",
+    "@supabase/supabase-js": "^2.109.0",
     "@types/node": "^25.2.3",
+    "axios": "^1.13.5",
     "bcryptjs": "^2.4.3",
     "bluebird": "^3.7.2",
     "clicksend": "^5.0.79",
@@ -36,7 +39,8 @@
     "mongoose": "^7.6.3",
     "nodemailer": "^6.9.7",
     "request": "^2.88.2",
-    "socket.io": "^4.6.0"
+    "socket.io": "^4.6.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

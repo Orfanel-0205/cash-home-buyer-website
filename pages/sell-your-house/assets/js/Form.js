@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             // Send to backend
-            const response = await fetch('/api/leads', {
+            const response = await fetch(HSD_CONFIG.apiUrl('/api/leads'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

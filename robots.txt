@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /api/
 Disallow: /pages/admin/
-Sitemap: https://www.homeselldirect.com/sitemap.xml
+Disallow: /pages/thank-you/
+Sitemap: https://home-sell-direct.vercel.app/sitemap.xml

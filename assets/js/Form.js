@@ -105,8 +105,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         try {
-            // IMPORTANT: Pointing to port 5000 where your backend is running
-            const response = await fetch('http://localhost:5000/api/leads', {
+            // Backend origin comes from assets/js/config.js (localhost vs deployed API)
+            const response = await fetch(HSD_CONFIG.apiUrl('/api/leads'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

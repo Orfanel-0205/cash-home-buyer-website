@@ -1,0 +1,7 @@
+# The Express API deploys to Render, not Vercel. Keeping it out of the static
+# build also keeps .env files and server code off the CDN.
+backend/
+node_modules/
+.qodo/
+verify-data.mongodb.js
+*.log

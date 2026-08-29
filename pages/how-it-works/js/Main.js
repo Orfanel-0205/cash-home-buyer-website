@@ -68,7 +68,7 @@ function initQuickForm() {
             };
             
             try {
-                const response = await fetch('/api/leads', {
+                const response = await fetch(HSD_CONFIG.apiUrl('/api/leads'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -78,7 +78,7 @@ function initQuickForm() {
                 
                 if (response.ok) {
                     // Redirect to thank you page or show success
-                    window.location.href = 'thank-you.html';
+                    window.location.href = '/pages/thank-you/thank-you';
                 } else {
                     alert('There was an error submitting your information. Please try again or call us at 1-800-CASH-NOW');
                 }

@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 // Submit to MongoDB via your backend API
-                const response = await fetch('/api/testimonials', {
+                const response = await fetch(HSD_CONFIG.apiUrl('/api/testimonials'), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load approved testimonials from the backend
 async function loadApprovedTestimonials() {
     try {
-        const response = await fetch('/api/testimonials');
+        const response = await fetch(HSD_CONFIG.apiUrl('/api/testimonials'));
         
         if (!response.ok) {
             console.error('Failed to load testimonials');

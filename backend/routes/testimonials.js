@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Testimonial = require('../models/Testimonial'); // Adjust path if needed
 const nodemailer = require('nodemailer');
+const { authMiddleware } = require('../middleware/Auth');
 
 // ==========================================
 // GET ALL APPROVED TESTIMONIALS (Public)
@@ -61,14 +62,14 @@ router.post('/testimonials', async (req, res) => {
             rating,
             situation: situation || '',
             email: email || '',
-            isApproved: true, // Requires admin approval
+            isApproved: false, // Held for admin approval before it appears publicly
             isFeatured: false,
             createdAt: new Date()
         });
 
         await testimonial.save();
 
-        console.log('✅ New testimonial saved to database:', {
+        console.log('✅ New testimonial saved (pending approval):', {
             id: testimonial._id,
             name,
             location,
@@ -115,6 +116,90 @@ router.post('/testimonials', async (req, res) => {
             message: 'Failed to submit testimonial. Please try again.',
             error: error.message
         });
+    }
+});
+
+// ==========================================
+// ADMIN MODERATION (Protected)
+// Declared before any '/testimonials/:id' route so the literal path wins.
+// ==========================================
+
+// GET /api/testimonials/admin?status=pending|approved|all
+router.get('/testimonials/admin', authMiddleware, async (req, res) => {
+    try {
+        const { status = 'pending' } = req.query;
+
+        const query = {};
+        if (status === 'pending') query.isApproved = false;
+        else if (status === 'approved') query.isApproved = true;
+
+        const testimonials = await Testimonial.find(query).sort({ createdAt: -1 }).limit(200);
+
+        const [pendingCount, approvedCount] = await Promise.all([
+            Testimonial.countDocuments({ isApproved: false }),
+            Testimonial.countDocuments({ isApproved: true })
+        ]);
+
+        res.status(200).json({
+            success: true,
+            count: testimonials.length,
+            counts: { pending: pendingCount, approved: approvedCount },
+            data: testimonials
+        });
+    } catch (error) {
+        console.error('Error fetching testimonials for moderation:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch testimonials' });
+    }
+});
+
+// PATCH /api/testimonials/:id/approve  { approved: true|false, featured: true|false }
+router.patch('/testimonials/:id/approve', authMiddleware, async (req, res) => {
+    try {
+        const update = {};
+        if (typeof req.body.approved === 'boolean') update.isApproved = req.body.approved;
+        if (typeof req.body.featured === 'boolean') update.isFeatured = req.body.featured;
+
+        if (!Object.keys(update).length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Provide approved and/or featured as booleans'
+            });
+        }
+
+        const testimonial = await Testimonial.findByIdAndUpdate(
+            req.params.id,
+            update,
+            { new: true, runValidators: true }
+        );
+
+        if (!testimonial) {
+            return res.status(404).json({ success: false, message: 'Testimonial not found' });
+        }
+
+        console.log(`Testimonial ${testimonial._id} updated by ${req.admin?.username || 'admin'}:`, update);
+
+        res.status(200).json({ success: true, message: 'Testimonial updated', data: testimonial });
+    } catch (error) {
+        console.error('Error updating testimonial:', error);
+        res.status(500).json({ success: false, message: 'Failed to update testimonial' });
+    }
+});
+
+// DELETE /api/testimonials/:id  - reject a review outright
+router.delete('/testimonials/:id', authMiddleware, async (req, res) => {
+    try {
+        const testimonial = await Testimonial.findByIdAndDelete(req.params.id);
+
+        if (!testimonial) {
+            return res.status(404).json({ success: false, message: 'Testimonial not found' });
+        }
+
+        console.log(`Testimonial ${req.params.id} deleted by ${req.admin?.username || 'admin'}`);
+
+        res.status(200).json({ success: true, message: 'Testimonial deleted' });
+    } catch (error) {
+        console.error('Error deleting testimonial:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete testimonial' });
     }
 });
 

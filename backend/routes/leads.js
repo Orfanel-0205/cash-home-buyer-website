@@ -7,8 +7,10 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Lead = require('../models/Lead');
+const { authMiddleware } = require('../middleware/Auth');
 const { sendLeadConfirmation, sendAdminNotification } = require('../utils/email');
 const { sendAdminSmsNotification, sendLeadSmsConfirmation } = require('../utils/sms');
+const { mirrorLeadContact } = require('../utils/leadContacts');
 
 // ===========================
 // VALIDATION MIDDLEWARE
@@ -34,7 +36,7 @@ const leadValidation = [
 ];
 
 // ===========================
-// CREATE NEW LEAD
+// CREATE NEW LEAD (Public - website form)
 // ===========================
 
 router.post('/', leadValidation, async (req, res) => {
@@ -79,6 +81,11 @@ router.post('/', leadValidation, async (req, res) => {
         const lead = new Lead(leadData);
         await lead.save();
 
+        // Mirror the contact fields to Supabase. Best effort only: MongoDB is the
+        // source of truth and this never throws, so a Supabase outage cannot fail
+        // the visitor's submission.
+        const supabaseMirror = mirrorLeadContact(lead);
+
         // Emit a socket event for new lead
         const io = req.app.get('socketio');
         io.emit('new_lead', lead);
@@ -113,6 +120,10 @@ router.post('/', leadValidation, async (req, res) => {
             console.error('Error sending admin notification SMS:', smsError);
         }
         
+        // The email and SMS calls above have already given this time to finish;
+        // await it so any failure is logged against this request, not orphaned.
+        await supabaseMirror;
+
         // Return success response
         res.status(201).json({
             success: true,
@@ -133,7 +144,7 @@ router.post('/', leadValidation, async (req, res) => {
 // GET ALL LEADS (Protected - for admin dashboard)
 // ===========================
 
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
     try {
         const {
             status,
@@ -186,112 +197,11 @@ router.get('/', async (req, res) => {
 });
 
 // ===========================
-// GET SINGLE LEAD BY ID
+// GET LEAD STATISTICS (Protected)
+// Declared before '/:id' so the literal path is not captured by the id param.
 // ===========================
 
-router.get('/:id', async (req, res) => {
-    try {
-        const lead = await Lead.findById(req.params.id);
-        
-        if (!lead) {
-            return res.status(404).json({
-                success: false,
-                message: 'Lead not found'
-            });
-        }
-        
-        res.json({
-            success: true,
-            data: lead
-        });
-        
-    } catch (error) {
-        console.error('Error fetching lead:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching lead'
-        });
-    }
-});
-
-// ===========================
-// UPDATE LEAD STATUS
-// ===========================
-
-router.patch('/:id/status', async (req, res) => {
-    try {
-        const { status, updatedBy } = req.body;
-        
-        const lead = await Lead.findById(req.params.id);
-        if (!lead) {
-            return res.status(404).json({
-                success: false,
-                message: 'Lead not found'
-            });
-        }
-        
-        await lead.updateStatus(status, updatedBy);
-        
-        res.json({
-            success: true,
-            message: 'Lead status updated',
-            data: lead
-        });
-        
-    } catch (error) {
-        console.error('Error updating lead status:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error updating lead status'
-        });
-    }
-});
-
-// ===========================
-// ADD NOTE TO LEAD
-// ===========================
-
-router.post('/:id/notes', async (req, res) => {
-    try {
-        const { content, createdBy } = req.body;
-        
-        if (!content) {
-            return res.status(400).json({
-                success: false,
-                message: 'Note content is required'
-            });
-        }
-        
-        const lead = await Lead.findById(req.params.id);
-        if (!lead) {
-            return res.status(404).json({
-                success: false,
-                message: 'Lead not found'
-            });
-        }
-        
-        await lead.addNote(content, createdBy);
-        
-        res.json({
-            success: true,
-            message: 'Note added successfully',
-            data: lead
-        });
-        
-    } catch (error) {
-        console.error('Error adding note:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error adding note'
-        });
-    }
-});
-
-// ===========================
-// GET LEAD STATISTICS
-// ===========================
-
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', authMiddleware, async (req, res) => {
     try {
         const stats = await Lead.aggregate([
             {
@@ -323,6 +233,108 @@ router.get('/stats/summary', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching statistics'
+        });
+    }
+});
+
+// ===========================
+// GET SINGLE LEAD BY ID (Protected)
+// ===========================
+
+router.get('/:id', authMiddleware, async (req, res) => {
+    try {
+        const lead = await Lead.findById(req.params.id);
+        
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lead not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: lead
+        });
+        
+    } catch (error) {
+        console.error('Error fetching lead:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching lead'
+        });
+    }
+});
+
+// ===========================
+// UPDATE LEAD STATUS (Protected)
+// ===========================
+
+router.patch('/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const { status, updatedBy } = req.body;
+        
+        const lead = await Lead.findById(req.params.id);
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lead not found'
+            });
+        }
+        
+        await lead.updateStatus(status, updatedBy);
+        
+        res.json({
+            success: true,
+            message: 'Lead status updated',
+            data: lead
+        });
+        
+    } catch (error) {
+        console.error('Error updating lead status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating lead status'
+        });
+    }
+});
+
+// ===========================
+// ADD NOTE TO LEAD (Protected)
+// ===========================
+
+router.post('/:id/notes', authMiddleware, async (req, res) => {
+    try {
+        const { content, createdBy } = req.body;
+        
+        if (!content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Note content is required'
+            });
+        }
+        
+        const lead = await Lead.findById(req.params.id);
+        if (!lead) {
+            return res.status(404).json({
+                success: false,
+                message: 'Lead not found'
+            });
+        }
+        
+        await lead.addNote(content, createdBy);
+        
+        res.json({
+            success: true,
+            message: 'Note added successfully',
+            data: lead
+        });
+        
+    } catch (error) {
+        console.error('Error adding note:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error adding note'
         });
     }
 });

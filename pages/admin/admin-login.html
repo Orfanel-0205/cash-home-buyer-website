@@ -199,10 +199,11 @@
     </div>
 </div>
 
+<script src="/assets/js/config.js"></script>
 <script>
     // Redirect if already logged in
     if (localStorage.getItem('adminToken')) {
-        window.location.href = 'admin-dashboard.html';
+        window.location.href = 'admin-dashboard';
     }
 
     // Password toggle
@@ -251,7 +252,7 @@
         btn.innerHTML = '<span class="spinner"></span>Logging in...';
 
         try {
-            const res  = await fetch('/api/admin/login', {
+            const res  = await fetch(HSD_CONFIG.apiUrl('/api/admin/login'), {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body:    JSON.stringify({ username, email, password })
@@ -262,7 +263,7 @@
             if (data.success) {
                 localStorage.setItem('adminToken', data.token);
                 localStorage.setItem('adminUser', JSON.stringify(data.admin));
-                window.location.href = 'admin-dashboard.html';
+                window.location.href = 'admin-dashboard';
             } else {
                 throw new Error(data.message || 'Login failed.');
             }

@@ -59,14 +59,64 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
     console.log('Email credentials loaded for:', process.env.EMAIL_USER);
 }
 
+if (!process.env.GEMINI_API_KEY) {
+    console.warn('GEMINI_API_KEY missing in .env. The website chat assistant will be unavailable.');
+} else {
+    console.log('Gemini chat enabled with model:', process.env.GEMINI_MODEL || 'gemini-2.5-flash');
+}
+
 if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY) {
     console.warn('CLICKSEND credentials missing in .env. SMS will not send.');
 } else {
     console.log('ClickSend credentials loaded for:', process.env.CLICKSEND_USERNAME);
 }
 
+// Render, Railway, and Fly all sit behind a proxy. Without this every request
+// looks like it came from the proxy's IP, so the rate limiters share one bucket
+// and lead tracking records the wrong address. Trust exactly one hop.
+app.set('trust proxy', process.env.TRUST_PROXY_HOPS ? Number(process.env.TRUST_PROXY_HOPS) : 1);
+
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: true, credentials: true }));
+// ===========================
+// CORS
+// ===========================
+// The static site is served from Vercel while this API runs on Render, so the
+// allowed origins have to be listed explicitly. Set ALLOWED_ORIGINS in .env as a
+// comma-separated list; FRONTEND_URL is always included. Vercel preview deploys
+// (*.vercel.app) are matched by pattern so every preview build does not need an entry.
+
+const staticAllowedOrigins = [
+    process.env.FRONTEND_URL,
+    ...(process.env.ALLOWED_ORIGINS || '').split(',')
+].map((o) => (o || '').trim().replace(/\/+$/, '')).filter(Boolean);
+
+const localOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+const vercelPreviewPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
+
+function isAllowedOrigin(origin) {
+    // No Origin header: same-origin navigation, curl, or a server-to-server call.
+    if (!origin) return true;
+
+    const clean = origin.replace(/\/+$/, '');
+    if (staticAllowedOrigins.includes(clean)) return true;
+    if (localOriginPattern.test(clean)) return true;
+    if (process.env.ALLOW_VERCEL_PREVIEWS !== 'false' && vercelPreviewPattern.test(clean)) return true;
+
+    return false;
+}
+
+app.use(cors({
+    origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) return callback(null, true);
+        console.warn('Blocked CORS request from origin:', origin);
+        return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+console.log('CORS allowed origins:', staticAllowedOrigins.length ? staticAllowedOrigins.join(', ') : '(localhost only)');
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize());
@@ -76,7 +126,11 @@ const apiLimiter = rateLimit({
     max: 100,
     message: 'Too many requests from this IP, please try again later.',
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    // /api/chat has its own, tighter per-minute limiter. Counting chat messages
+    // here too would let a chatty visitor exhaust the shared budget and lock
+    // themselves out of submitting the lead form.
+    skip: (req) => req.path.startsWith('/chat')
 });
 app.use('/api/', apiLimiter);
 
@@ -87,7 +141,11 @@ app.use((req, res, next) => {
 
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: { origin: '*', methods: ['GET', 'POST'] }
+    cors: {
+        origin: (origin, callback) => callback(isAllowedOrigin(origin) ? null : new Error('Not allowed by CORS'), true),
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
 });
 
 app.set('socketio', io);
@@ -182,25 +240,10 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/leads', require('./routes/leads'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/contact', require('./routes/contact'));
 app.use('/api', require('./routes/sms'));
 app.use('/api', require('./routes/testimonials'));
-
-app.get('/sitemap.xml', (req, res) => {
-    const baseUrl = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
-    const date = new Date().toISOString().split('T')[0];
-    res.header('Content-Type', 'application/xml');
-    res.send(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-    <url><loc>${baseUrl}/</loc><lastmod>${date}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>
-    <url><loc>${baseUrl}/pages/sell-your-house/sell.html</loc><lastmod>${date}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
-</urlset>`);
-});
-
-app.get('/robots.txt', (req, res) => {
-    const baseUrl = process.env.FRONTEND_URL || `http://localhost:${PORT}`;
-    res.header('Content-Type', 'text/plain');
-    res.send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /pages/admin/\nSitemap: ${baseUrl}/sitemap.xml`);
-});
 
 app.use((req, res, next) => {
     const forbidden = ['/backend', '/.env', '/node_modules', '/.git'];
@@ -210,7 +253,9 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.static(path.join(__dirname, '../')));
+// extensions: ['html'] mirrors Vercel's cleanUrls, so /pages/faq/faq resolves to
+// faq.html locally exactly as it does on the deployed static site.
+app.use(express.static(path.join(__dirname, '../'), { extensions: ['html'] }));
 
 app.get('*', (req, res) => {
     if (req.path.startsWith('/api/')) {
