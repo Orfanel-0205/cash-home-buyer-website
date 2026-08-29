@@ -137,11 +137,11 @@
             }
 
             setStatus('err', (data && data.message) ||
-                'We could not send your message. Please call 1-800-CASH-NOW or email info@uscashbuyers.com.');
+                'We could not send your message. Please call (517) 500-8870 or email offer@metromichiganpropertybuyers.com.');
 
         } catch (err) {
             setStatus('err',
-                'We could not reach the server. Please call 1-800-CASH-NOW or email info@uscashbuyers.com.');
+                'We could not reach the server. Please call (517) 500-8870 or email offer@metromichiganpropertybuyers.com.');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = original;

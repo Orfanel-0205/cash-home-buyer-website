@@ -69,7 +69,7 @@ const SYSTEM_INSTRUCTION = [
     '- Many visitors are under financial or personal stress. Be respectful and never pressure them.',
     '- Stay on the subject of selling a home to HOME SELL DIRECT. If asked about something unrelated,',
     '  say briefly that you can only help with questions about selling a home, and offer to help with that.',
-    '- If a visitor needs a person, point them to 1-800-CASH-NOW or info@uscashbuyers.com.'
+    '- If a visitor needs a person, point them to (517) 500-8870 or offer@metromichiganpropertybuyers.com.'
 ].join('\n');
 
 // ===========================
@@ -163,8 +163,8 @@ function getClientIp(req) {
 }
 
 const FALLBACK_REPLY =
-    "I'm having trouble answering right now. You can reach our team at 1-800-CASH-NOW or " +
-    'info@uscashbuyers.com, or request your no-obligation cash offer at /pages/sell-your-house/sell.html.';
+    "I'm having trouble answering right now. You can reach our team at (517) 500-8870 or " +
+    'offer@metromichiganpropertybuyers.com, or request your no-obligation cash offer at /pages/sell-your-house/sell.html.';
 
 // ===========================
 // POST /api/chat  (Public)

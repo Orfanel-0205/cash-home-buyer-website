@@ -199,7 +199,7 @@ const sendContactAcknowledgement = async (contact) => {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: contact.email,
         subject: 'We got your message - Home Sell Direct',
-        text: `Hi ${contact.name},\n\nThanks for reaching out. We received your message and someone from our team will get back to you within one business day.\n\nFor a copy of your records, here is what you sent:\n\n${contact.message}\n\nIf it is urgent, call us at 1-800-CASH-NOW.\n\nBest regards,\nHome Sell Direct Team`
+        text: `Hi ${contact.name},\n\nThanks for reaching out. We received your message and someone from our team will get back to you within one business day.\n\nFor a copy of your records, here is what you sent:\n\n${contact.message}\n\nIf it is urgent, call us at (517) 500-8870.\n\nBest regards,\nHome Sell Direct Team`
     };
 
     return sendEmail(message);

@@ -28,7 +28,7 @@ const contactLimiter = rateLimit({
     skipFailedRequests: true,
     message: {
         success: false,
-        message: 'Too many messages from this address. Please try again later, or call 1-800-CASH-NOW.'
+        message: 'Too many messages from this address. Please try again later, or call (517) 500-8870.'
     }
 });
 
@@ -106,7 +106,7 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
             // The message never reached the inbox, so do not claim it did.
             return res.status(502).json({
                 success: false,
-                message: 'We could not send your message right now. Please call 1-800-CASH-NOW or email info@uscashbuyers.com.'
+                message: 'We could not send your message right now. Please call (517) 500-8870 or email offer@metromichiganpropertybuyers.com.'
             });
         }
 
@@ -126,7 +126,7 @@ router.post('/', contactLimiter, contactValidation, async (req, res) => {
         console.error('Error handling contact submission:', error);
         res.status(500).json({
             success: false,
-            message: 'Something went wrong on our end. Please try again, or call 1-800-CASH-NOW.'
+            message: 'Something went wrong on our end. Please try again, or call (517) 500-8870.'
         });
     }
 });

@@ -80,11 +80,11 @@ function initQuickForm() {
                     // Redirect to thank you page or show success
                     window.location.href = '/pages/thank-you/thank-you';
                 } else {
-                    alert('There was an error submitting your information. Please try again or call us at 1-800-CASH-NOW');
+                    alert('There was an error submitting your information. Please try again or call us at (517) 500-8870');
                 }
             } catch (error) {
                 console.error('Form submission error:', error);
-                alert('There was an error submitting your information. Please try again or call us at 1-800-CASH-NOW');
+                alert('There was an error submitting your information. Please try again or call us at (517) 500-8870');
             }
         });
     }

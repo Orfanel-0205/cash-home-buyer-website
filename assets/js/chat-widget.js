@@ -33,7 +33,7 @@
 
     var OFFLINE_MESSAGE =
         "I'm having trouble connecting right now. Please try the contact form, " +
-        'or call 1-800-CASH-NOW.';
+        'or call (517) 500-8870.';
 
     // ===========================
     // STATE

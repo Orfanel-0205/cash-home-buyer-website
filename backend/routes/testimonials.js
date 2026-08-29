@@ -251,8 +251,8 @@ async function sendConfirmationEmail(email, name) {
                     </div>
                     <div class="footer">
                         <p>HOME SELL DIRECT<br>
-                        Email: info@uscashbuyers.com<br>
-                        Phone: 1-800-CASH-NOW</p>
+                        Email: offer@metromichiganpropertybuyers.com<br>
+                        Phone: (517) 500-8870</p>
                     </div>
                 </div>
             </body>

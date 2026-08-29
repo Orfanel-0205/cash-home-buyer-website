@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /pages/admin/
 Disallow: /pages/thank-you/
-Sitemap: https://home-sell-direct.vercel.app/sitemap.xml
+Sitemap: https://michiganpropertybuyers.vercel.app/sitemap.xml
