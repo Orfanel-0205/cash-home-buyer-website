@@ -11,15 +11,15 @@
 //   3. localhost detection      - local development against `npm run dev`
 //   4. PRODUCTION_API_BASE_URL  - the deployed Render URL below
 //
-// SET THIS after the first Render deploy, e.g. 'https://home-sell-direct-api.onrender.com'
-// The static site itself lives at https://home-sell-direct.vercel.app
+// Live API: https://cash-home-buyer-website.onrender.com (Render)
+// Live site: https://home-sell-direct.vercel.app (Vercel)
 // Leaving it empty falls back to same-origin requests, which is correct when the
 // Express server is also serving these pages.
 
 (function () {
     'use strict';
 
-    var PRODUCTION_API_BASE_URL = '';
+    var PRODUCTION_API_BASE_URL = 'https://cash-home-buyer-website.onrender.com';
 
     var LOCAL_API_BASE_URL = 'http://localhost:5000';
 

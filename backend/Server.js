@@ -65,6 +65,19 @@ if (!process.env.GEMINI_API_KEY) {
     console.log('Gemini chat enabled with model:', process.env.GEMINI_MODEL || 'gemini-2.5-flash');
 }
 
+// Supabase mirroring fails silently by design (a lead must never fail because of
+// it), so report its status at startup like the other integrations do.
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
+    console.warn('SUPABASE_URL or SUPABASE_SECRET_KEY missing in .env. Lead contact mirroring is disabled.');
+} else {
+    try {
+        const host = new URL(process.env.SUPABASE_URL).host;
+        console.log('Supabase lead mirroring enabled for project:', host);
+    } catch (error) {
+        console.warn('SUPABASE_URL is not a valid URL. Lead contact mirroring will fail:', process.env.SUPABASE_URL);
+    }
+}
+
 if (!process.env.CLICKSEND_USERNAME || !process.env.CLICKSEND_API_KEY) {
     console.warn('CLICKSEND credentials missing in .env. SMS will not send.');
 } else {
