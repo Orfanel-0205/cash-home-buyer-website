@@ -7,8 +7,13 @@ const apiKey = process.env.CLICKSEND_API_KEY;
 // Node 18+ provides fetch, so this legacy ClickSend integration has no hidden
 // axios dependency and remains dormant when credentials are absent.
 async function clicksendRequest(path, options = {}) {
+    // fetch has no default timeout, so an unresponsive provider would hang
+    // whatever is awaiting this call.
+    const timeout = parseInt(process.env.SMS_TIMEOUT_MS, 10) || 15000;
+
     const response = await fetch(`https://rest.clicksend.com/v3${path}`, {
         ...options,
+        signal: AbortSignal.timeout(timeout),
         headers: {
             'Content-Type': 'application/json',
             'Authorization': `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`,

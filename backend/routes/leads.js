@@ -36,6 +36,31 @@ const leadValidation = [
 ];
 
 // ===========================
+// POST-SAVE NOTIFICATIONS
+// ===========================
+// Runs after the response has been sent. Every call is independently guarded so
+// one slow provider cannot stop the others, and no failure can surface to the
+// visitor - their lead is already saved by the time this runs.
+
+async function deliverLeadNotifications(lead) {
+    const tasks = [
+        ['confirmation email', () => sendLeadConfirmation(lead)],
+        ['admin notification email', () => sendAdminNotification(lead)],
+        ['confirmation SMS', () => sendLeadSmsConfirmation(lead)],
+        ['admin notification SMS', () => sendAdminSmsNotification(lead)],
+        ['Supabase contact mirror', () => mirrorLeadContact(lead)]
+    ];
+
+    await Promise.allSettled(tasks.map(async ([label, run]) => {
+        try {
+            await run();
+        } catch (error) {
+            console.error(`Lead ${lead._id}: ${label} failed:`, error.message);
+        }
+    }));
+}
+
+// ===========================
 // CREATE NEW LEAD (Public - website form)
 // ===========================
 
@@ -81,58 +106,31 @@ router.post('/', leadValidation, async (req, res) => {
         const lead = new Lead(leadData);
         await lead.save();
 
-        // Mirror the contact fields to Supabase. Best effort only: MongoDB is the
-        // source of truth and this never throws, so a Supabase outage cannot fail
-        // the visitor's submission.
-        const supabaseMirror = mirrorLeadContact(lead);
-
         // Emit a socket event for new lead
         const io = req.app.get('socketio');
         io.emit('new_lead', lead);
-        
-        // Send confirmation email to seller
-        try {
-            await sendLeadConfirmation(lead);
-        } catch (emailError) {
-            console.error('Error sending confirmation email:', emailError);
-            // Don't fail the request if email fails
-        }
-        
-        // Send notification email to admin
-        try {
-            await sendAdminNotification(lead);
-        } catch (emailError) {
-            console.error('Error sending admin notification:', emailError);
-            // Don't fail the request if email fails
-        }
 
-        // Send confirmation SMS to seller if they consented
-        try {
-            await sendLeadSmsConfirmation(lead);
-        } catch (smsError) {
-            console.error('Error sending confirmation SMS:', smsError);
-        }
-
-        // Send notification SMS to admin
-        try {
-            await sendAdminSmsNotification(lead);
-        } catch (smsError) {
-            console.error('Error sending admin notification SMS:', smsError);
-        }
-        
-        // The email and SMS calls above have already given this time to finish;
-        // await it so any failure is logged against this request, not orphaned.
-        await supabaseMirror;
-
-        // Return success response
+        // Respond as soon as the lead is durably saved. Everything below is
+        // notification: email, SMS, and the Supabase mirror. None of it may hold
+        // the visitor's browser open, because a hung SMTP connection would
+        // otherwise leave the form spinning forever on a lead we already have.
         res.status(201).json({
             success: true,
             message: 'Lead submitted successfully',
             leadId: lead._id
         });
+
+        // Fire-and-forget from here. Each settles on its own and logs its own
+        // failure; nothing here can touch the response.
+        deliverLeadNotifications(lead);
         
     } catch (error) {
         console.error('Error creating lead:', error);
+
+        // The success response may already have been sent, in which case the lead
+        // is saved and there is nothing left to tell the visitor.
+        if (res.headersSent) return;
+
         res.status(500).json({
             success: false,
             message: 'An error occurred while submitting your information. Please try again.'

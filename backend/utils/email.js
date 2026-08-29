@@ -13,12 +13,20 @@ const createTransporter = () => {
         return null;
     }
 
+    // Without explicit timeouts nodemailer waits indefinitely. Cloud hosts often
+    // throttle or block outbound SMTP, so a send can hang forever and hold open
+    // whatever is awaiting it.
+    const timeout = parseInt(process.env.EMAIL_TIMEOUT_MS, 10) || 15000;
+
     return nodemailer.createTransport({
         service: process.env.EMAIL_SERVICE || 'gmail',
         auth: {
             user: user,
             pass: pass
-        }
+        },
+        connectionTimeout: timeout,
+        greetingTimeout: timeout,
+        socketTimeout: timeout
     });
 };
 
