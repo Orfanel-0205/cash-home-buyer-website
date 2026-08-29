@@ -74,7 +74,11 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
         const host = new URL(process.env.SUPABASE_URL).host;
         console.log('Supabase lead mirroring enabled for project:', host);
     } catch (error) {
-        console.warn('SUPABASE_URL is not a valid URL. Lead contact mirroring will fail:', process.env.SUPABASE_URL);
+        const bad = String(process.env.SUPABASE_URL);
+        const hint = bad.startsWith('sb_') || bad.startsWith('eyJ')
+            ? 'that looks like an API key, not the project URL'
+            : 'expected something like https://<project>.supabase.co';
+        console.warn(`SUPABASE_URL is not a valid URL (${bad.length} chars) - ${hint}. Lead contact mirroring will fail.`);
     }
 }
 
