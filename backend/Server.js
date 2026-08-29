@@ -90,6 +90,9 @@ const staticAllowedOrigins = [
     ...(process.env.ALLOWED_ORIGINS || '').split(',')
 ].map((o) => (o || '').trim().replace(/\/+$/, '')).filter(Boolean);
 
+// FRONTEND_URL and ALLOWED_ORIGINS usually name the same host; list it once.
+const allowedOrigins = [...new Set(staticAllowedOrigins)];
+
 const localOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 const vercelPreviewPattern = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 
@@ -98,7 +101,7 @@ function isAllowedOrigin(origin) {
     if (!origin) return true;
 
     const clean = origin.replace(/\/+$/, '');
-    if (staticAllowedOrigins.includes(clean)) return true;
+    if (allowedOrigins.includes(clean)) return true;
     if (localOriginPattern.test(clean)) return true;
     if (process.env.ALLOW_VERCEL_PREVIEWS !== 'false' && vercelPreviewPattern.test(clean)) return true;
 
@@ -116,7 +119,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-console.log('CORS allowed origins:', staticAllowedOrigins.length ? staticAllowedOrigins.join(', ') : '(localhost only)');
+console.log('CORS allowed origins:', allowedOrigins.length ? allowedOrigins.join(', ') : '(localhost only)');
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(mongoSanitize());
@@ -268,8 +271,7 @@ app.use((err, req, res, next) => {
     console.error('Global Error Handler:', err);
     res.status(500).json({
         success: false,
-        message: 'Internal Server Error',
-        error: err.message
+        message: 'Internal Server Error'
     });
 });
 

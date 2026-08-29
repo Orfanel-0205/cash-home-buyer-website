@@ -241,7 +241,7 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
 // GET SINGLE LEAD BY ID (Protected)
 // ===========================
 
-router.get('/:id', authMiddleware, async (req, res) => {
+router.get('/:id([0-9a-fA-F]{24})', authMiddleware, async (req, res) => {
     try {
         const lead = await Lead.findById(req.params.id);
         

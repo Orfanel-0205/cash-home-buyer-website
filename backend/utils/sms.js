@@ -1,20 +1,36 @@
 require('dotenv').config();
-const axios = require('axios');
 
 // --- ClickSend API Configuration ---
 const username = process.env.CLICKSEND_USERNAME;
 const apiKey = process.env.CLICKSEND_API_KEY;
 
-// Create a pre-configured axios instance for all ClickSend API calls.
-const clicksendApi = axios.create({
-    baseURL: 'https://rest.clicksend.com/v3',
-    headers: {
-        'Content-Type': 'application/json',
-        'Authorization': (username && apiKey)
-            ? `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`
-            : ''
+// Node 18+ provides fetch, so this legacy ClickSend integration has no hidden
+// axios dependency and remains dormant when credentials are absent.
+async function clicksendRequest(path, options = {}) {
+    const response = await fetch(`https://rest.clicksend.com/v3${path}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Basic ${Buffer.from(`${username}:${apiKey}`).toString('base64')}`,
+            ...(options.headers || {})
+        }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const error = new Error(data.response_msg || `ClickSend returned HTTP ${response.status}`);
+        error.response = { status: response.status, data };
+        throw error;
     }
-});
+    return { data };
+}
+
+const clicksendApi = {
+    get: (path) => clicksendRequest(path),
+    post: (path, payload) => clicksendRequest(path, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+    })
+};
 
 /**
  * Sends a single SMS message.
