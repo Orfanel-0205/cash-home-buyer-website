@@ -1,4 +1,4 @@
-//backend/utils/Email.js
+//backend/utils/email.js
 const nodemailer = require('nodemailer');
 
 /**
@@ -76,4 +76,47 @@ const sendAdminNotification = async (lead) => {
     return sendEmail(message);
 };
 
-module.exports = { sendLeadConfirmation, sendAdminNotification };
+/**
+ * Forwards a contact-form message to the admin inbox.
+ * replyTo is the visitor's address so hitting Reply answers them directly.
+ */
+const sendContactMessage = async (contact) => {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) {
+        console.error('❌ Contact form: ADMIN_EMAIL is not set, message not delivered');
+        return false;
+    }
+
+    const message = {
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: adminEmail,
+        replyTo: contact.email,
+        subject: `📨 Contact form: ${contact.name}`,
+        text: `New message from the website contact form.\n\nName: ${contact.name}\nEmail: ${contact.email}\n${contact.phone ? `Phone: ${contact.phone}\n` : ''}Received: ${new Date().toLocaleString()}\n\nMessage:\n${contact.message}\n\nReply to this email to respond directly to the sender.`
+    };
+
+    return sendEmail(message);
+};
+
+/**
+ * Confirms to the visitor that their message arrived.
+ */
+const sendContactAcknowledgement = async (contact) => {
+    if (!contact.email) return false;
+
+    const message = {
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: contact.email,
+        subject: 'We got your message - Home Sell Direct',
+        text: `Hi ${contact.name},\n\nThanks for reaching out. We received your message and someone from our team will get back to you within one business day.\n\nFor a copy of your records, here is what you sent:\n\n${contact.message}\n\nIf it is urgent, call us at 1-800-CASH-NOW.\n\nBest regards,\nHome Sell Direct Team`
+    };
+
+    return sendEmail(message);
+};
+
+module.exports = {
+    sendLeadConfirmation,
+    sendAdminNotification,
+    sendContactMessage,
+    sendContactAcknowledgement
+};
