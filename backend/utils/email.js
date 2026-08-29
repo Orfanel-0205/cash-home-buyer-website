@@ -1,8 +1,67 @@
 //backend/utils/email.js
+// ===========================
+// EMAIL DELIVERY
+// ===========================
+// Two transports, chosen at send time:
+//
+//   Resend (HTTPS)  - used whenever RESEND_API_KEY is set. Render blocks
+//                     outbound SMTP, so this is the only one that works there.
+//   Gmail SMTP      - the fallback, still fine for local development.
+//
+// The four send* functions below are unchanged, so nothing that calls them
+// needs to know which transport carried the message.
+
 const nodemailer = require('nodemailer');
 
+const RESEND_ENDPOINT = 'https://api.resend.com/emails';
+const TIMEOUT_MS = parseInt(process.env.EMAIL_TIMEOUT_MS, 10) || 15000;
+
+function usingResend() {
+    return Boolean(process.env.RESEND_API_KEY);
+}
+
 /**
- * Creates the transporter only when needed and validates credentials
+ * Resend requires a sender on a domain you have verified. Until a domain is
+ * verified their shared onboarding@resend.dev address works, but only for
+ * delivery to the address that owns the Resend account.
+ */
+function resendFrom() {
+    return process.env.RESEND_FROM || 'Home Sell Direct <onboarding@resend.dev>';
+}
+
+async function sendViaResend(options) {
+    const payload = {
+        from: resendFrom(),
+        to: [options.to],
+        subject: options.subject,
+        text: options.text
+    };
+    if (options.replyTo) payload.reply_to = options.replyTo;
+
+    const response = await fetch(RESEND_ENDPOINT, {
+        method: 'POST',
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+        headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const detail = data.message || data.error || `HTTP ${response.status}`;
+        const error = new Error(detail);
+        error.status = response.status;
+        throw error;
+    }
+
+    return data.id;
+}
+
+/**
+ * Creates the SMTP transporter only when needed and validates credentials.
  */
 const createTransporter = () => {
     const user = process.env.EMAIL_USER;
@@ -16,37 +75,61 @@ const createTransporter = () => {
     // Without explicit timeouts nodemailer waits indefinitely. Cloud hosts often
     // throttle or block outbound SMTP, so a send can hang forever and hold open
     // whatever is awaiting it.
-    const timeout = parseInt(process.env.EMAIL_TIMEOUT_MS, 10) || 15000;
-
     return nodemailer.createTransport({
         service: process.env.EMAIL_SERVICE || 'gmail',
         auth: {
             user: user,
             pass: pass
         },
-        connectionTimeout: timeout,
-        greetingTimeout: timeout,
-        socketTimeout: timeout
+        connectionTimeout: TIMEOUT_MS,
+        greetingTimeout: TIMEOUT_MS,
+        socketTimeout: TIMEOUT_MS
     });
 };
 
+async function sendViaSmtp(options) {
+    const transporter = createTransporter();
+    if (!transporter) return null;
+
+    const info = await transporter.sendMail(options);
+    return info.messageId;
+}
+
 /**
- * Generic send email function with error handling
+ * Generic send email function with error handling.
+ * Returns true on delivery, false on any failure - never throws.
  */
 const sendEmail = async (options) => {
-    const transporter = createTransporter();
-    if (!transporter) return false;
+    const via = usingResend() ? 'Resend' : 'SMTP';
 
     try {
-        const info = await transporter.sendMail(options);
-        console.log(`📧 Email sent: ${info.messageId}`);
+        const id = usingResend()
+            ? await sendViaResend(options)
+            : await sendViaSmtp(options);
+
+        if (!id) return false;
+
+        console.log(`📧 Email sent via ${via} to ${options.to}: ${id}`);
         return true;
+
     } catch (error) {
-        console.error('❌ Error sending email:', error.message);
-        if (error.code === 'EAUTH') {
+        console.error(`❌ Error sending email via ${via} to ${options.to}:`, error.message);
+
+        if (via === 'Resend') {
+            if (error.status === 401 || error.status === 403) {
+                console.error('   👉 FIX: RESEND_API_KEY is missing, wrong, or revoked.');
+            } else if (error.status === 422) {
+                console.error('   👉 FIX: Resend rejected the sender or recipient.');
+                console.error('   👉 NOTE: onboarding@resend.dev only delivers to the address that owns the Resend account.');
+                console.error('   👉 To send anywhere else, verify a domain and set RESEND_FROM to an address on it.');
+            }
+        } else if (error.code === 'EAUTH') {
             console.error('   👉 FIX: Check your EMAIL_USER and EMAIL_PASS in .env');
             console.error('   👉 NOTE: If using Gmail, ensure you are using an App Password, not your login password.');
+        } else if (error.message && error.message.toLowerCase().includes('timeout')) {
+            console.error('   👉 NOTE: The host is likely blocking outbound SMTP. Set RESEND_API_KEY to send over HTTPS instead.');
         }
+
         return false;
     }
 };

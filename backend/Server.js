@@ -53,10 +53,15 @@ if (!process.env.JWT_SECRET) {
 if (process.env.EMAIL_USER) process.env.EMAIL_USER = process.env.EMAIL_USER.trim();
 if (process.env.EMAIL_PASS) process.env.EMAIL_PASS = process.env.EMAIL_PASS.trim();
 
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('EMAIL_USER or EMAIL_PASS missing in .env. Emails will not send.');
+// Resend sends over HTTPS and is the only transport that works on hosts that
+// block outbound SMTP (Render does). SMTP stays as the local-development path.
+if (process.env.RESEND_API_KEY) {
+    console.log('Email transport: Resend (HTTPS), from', process.env.RESEND_FROM || 'onboarding@resend.dev');
+} else if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('No email transport configured. Set RESEND_API_KEY, or EMAIL_USER and EMAIL_PASS. Emails will not send.');
 } else {
-    console.log('Email credentials loaded for:', process.env.EMAIL_USER);
+    console.log('Email transport: SMTP via', process.env.EMAIL_SERVICE || 'gmail', 'as', process.env.EMAIL_USER);
+    console.warn('  NOTE: hosts that block outbound SMTP will time out. Set RESEND_API_KEY there.');
 }
 
 if (!process.env.GEMINI_API_KEY) {
