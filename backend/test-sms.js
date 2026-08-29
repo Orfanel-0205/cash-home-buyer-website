@@ -23,7 +23,7 @@ async function runTests() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`ClickSend Username: ${process.env.CLICKSEND_USERNAME || '❌ MISSING'}`);
     console.log(`ClickSend API Key: ${process.env.CLICKSEND_API_KEY ? '✅ Loaded (hidden)' : '❌ MISSING'}`);
-    console.log(`Sender ID: ${process.env.CLICKSEND_FROM_NUMBER || 'HomeSell (default)'}`);
+    console.log(`Sender ID: ${process.env.CLICKSEND_FROM_NUMBER || 'MetroMich (default)'}`);
     console.log(`Test recipient: ${TEST_TO_NUMBER || '❌ MISSING (set RECIPIENT_PHONE in .env)'}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
@@ -33,7 +33,7 @@ async function runTests() {
         console.error('\n💡 Add these to your .env file:');
         console.error('   CLICKSEND_USERNAME=YOUR_CLICKSEND_USERNAME');
         console.error('   CLICKSEND_API_KEY=YOUR_API_KEY_FROM_CLICKSEND_DASHBOARD');
-        console.error('   CLICKSEND_FROM_NUMBER=HomeSell');
+        console.error('   CLICKSEND_FROM_NUMBER=MetroMich');
         process.exit(1);
     }
 
@@ -71,7 +71,7 @@ async function runTests() {
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('🧪 Test 1: Calculating SMS Price...');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        const testMessage = 'Test message from Home Sell Direct via ClickSend!';
+        const testMessage = 'Test message from Metro Michigan Property Buyers via ClickSend!';
         const priceResult = await calculateSMSPrice(TEST_TO_NUMBER, testMessage);
         
         if (priceResult.success) {
@@ -156,7 +156,7 @@ async function runTests() {
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('🧪 Test 5: Testing Long Message (Multi-part)...');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        const longMessage = `This is a longer test message from Home Sell Direct. We want to see how ClickSend handles messages that are longer than 160 characters. This message should be split into multiple SMS parts. ClickSend automatically handles this for us, and we'll see the cost reflect the number of parts. This is important for understanding pricing!`;
+        const longMessage = `This is a longer test message from Metro Michigan Property Buyers. We want to see how ClickSend handles messages that are longer than 160 characters. This message should be split into multiple SMS parts. ClickSend automatically handles this for us, and we'll see the cost reflect the number of parts. This is important for understanding pricing!`;
         
         const longPriceResult = await calculateSMSPrice(TEST_TO_NUMBER, longMessage);
         

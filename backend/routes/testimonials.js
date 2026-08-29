@@ -221,9 +221,9 @@ async function sendConfirmationEmail(email, name) {
     });
 
     const mailOptions = {
-        from: `"HOME SELL DIRECT" <${process.env.EMAIL_USER}>`,
+        from: `"METRO MICHIGAN PROPERTY BUYERS" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: 'Thank You for Your Review! - HOME SELL DIRECT',
+        subject: 'Thank You for Your Review! - METRO MICHIGAN PROPERTY BUYERS',
         html: `
             <!DOCTYPE html>
             <html>
@@ -243,14 +243,14 @@ async function sendConfirmationEmail(email, name) {
                     </div>
                     <div class="content">
                         <p>Dear ${name},</p>
-                        <p>Thank you for taking the time to share your experience with HOME SELL DIRECT!</p>
+                        <p>Thank you for taking the time to share your experience with METRO MICHIGAN PROPERTY BUYERS!</p>
                         <p>Your review has been received and will be reviewed by our team. We typically post reviews within 24-48 hours after verification.</p>
                         <p>Your feedback helps other homeowners make informed decisions about selling their houses for cash.</p>
                         <p>If you have any questions, please don't hesitate to contact us.</p>
-                        <p>Best regards,<br>The HOME SELL DIRECT Team</p>
+                        <p>Best regards,<br>The METRO MICHIGAN PROPERTY BUYERS Team</p>
                     </div>
                     <div class="footer">
-                        <p>HOME SELL DIRECT<br>
+                        <p>METRO MICHIGAN PROPERTY BUYERS<br>
                         Email: offer@metromichiganpropertybuyers.com<br>
                         Phone: (517) 500-8870</p>
                     </div>

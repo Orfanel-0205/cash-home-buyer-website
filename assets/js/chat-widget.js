@@ -1,5 +1,5 @@
 // ===========================
-// CHAT WIDGET - HOME SELL DIRECT
+// CHAT WIDGET - METRO MICHIGAN PROPERTY BUYERS
 // ===========================
 // Self-contained floating chat assistant. Drop this one script onto any public
 // page (after assets/js/config.js) and it injects its own markup and styles:
@@ -21,7 +21,7 @@
     var MAX_MESSAGE_LENGTH = 1000;
 
     var GREETING =
-        "Hi! I'm the Home Sell Direct assistant. Ask me anything about selling your house " +
+        "Hi! I'm the Metro Michigan Property Buyers assistant. Ask me anything about selling your house " +
         'for cash — how the process works, timelines, fees, or what to expect.';
 
     var SUGGESTIONS = [
@@ -189,10 +189,10 @@
         var root = document.createElement('div');
         root.className = 'hsd-chat';
         root.innerHTML =
-            '<div class="hsd-chat__panel" role="dialog" aria-modal="false" aria-label="Chat with Home Sell Direct">' +
+            '<div class="hsd-chat__panel" role="dialog" aria-modal="false" aria-label="Chat with Metro Michigan Property Buyers">' +
                 '<div class="hsd-chat__header">' +
                     '<div>' +
-                        '<p class="hsd-chat__title">Home Sell Direct</p>' +
+                        '<p class="hsd-chat__title">Metro Michigan Property Buyers</p>' +
                         '<p class="hsd-chat__subtitle">Ask us about selling your home</p>' +
                     '</div>' +
                     '<button type="button" class="hsd-chat__close" aria-label="Close chat">&times;</button>' +

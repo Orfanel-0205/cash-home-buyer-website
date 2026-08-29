@@ -132,7 +132,7 @@ async function sendLeadSmsConfirmation(lead) {
     const firstName = lead.fullName.split(' ')[0];
 
     const message =
-        `Hi ${firstName}, this is Home Sell Direct. ` +
+        `Hi ${firstName}, this is Metro Michigan Property Buyers. ` +
         `We've received your inquiry for ${lead.propertyAddress} ` +
         `and will be in touch shortly.`;
 

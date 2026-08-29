@@ -1,4 +1,4 @@
-# HOME SELL DIRECT
+# METRO MICHIGAN PROPERTY BUYERS
 
 Lead-generation website for a cash home-buying business. Homeowners submit their property
 details through the site, the lead is stored in MongoDB, and the team is notified by email and

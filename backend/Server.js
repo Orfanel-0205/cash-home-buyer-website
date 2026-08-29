@@ -1,5 +1,5 @@
 // ===========================
-// BACKEND SERVER - HOME SELL DIRECT
+// BACKEND SERVER - METRO MICHIGAN PROPERTY BUYERS
 // ===========================
 
 const path = require('path');

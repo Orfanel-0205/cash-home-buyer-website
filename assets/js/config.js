@@ -1,5 +1,5 @@
 // ===========================
-// FRONTEND RUNTIME CONFIG - HOME SELL DIRECT
+// FRONTEND RUNTIME CONFIG - METRO MICHIGAN PROPERTY BUYERS
 // ===========================
 // The static site (Vercel) and the API (Render) live on different origins in
 // production, so pages cannot assume same-origin '/api/...' paths. This file is

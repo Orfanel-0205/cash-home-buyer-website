@@ -26,7 +26,7 @@ function usingResend() {
  * delivery to the address that owns the Resend account.
  */
 function resendFrom() {
-    return process.env.RESEND_FROM || 'Home Sell Direct <onboarding@resend.dev>';
+    return process.env.RESEND_FROM || 'Metro Michigan Property Buyers <onboarding@resend.dev>';
 }
 
 async function sendViaResend(options) {
@@ -143,8 +143,8 @@ const sendLeadConfirmation = async (lead) => {
     const message = {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: lead.email,
-        subject: 'We received your inquiry - Home Sell Direct',
-        text: `Hi ${lead.fullName},\n\nThanks for reaching out! We received your details regarding ${lead.propertyAddress}.\n\nWe will review your property and get back to you shortly with a cash offer.\n\nBest regards,\nHome Sell Direct Team`
+        subject: 'We received your inquiry - Metro Michigan Property Buyers',
+        text: `Hi ${lead.fullName},\n\nThanks for reaching out! We received your details regarding ${lead.propertyAddress}.\n\nWe will review your property and get back to you shortly with a cash offer.\n\nBest regards,\nMetro Michigan Property Buyers Team`
     };
 
     return sendEmail(message);
@@ -198,8 +198,8 @@ const sendContactAcknowledgement = async (contact) => {
     const message = {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: contact.email,
-        subject: 'We got your message - Home Sell Direct',
-        text: `Hi ${contact.name},\n\nThanks for reaching out. We received your message and someone from our team will get back to you within one business day.\n\nFor a copy of your records, here is what you sent:\n\n${contact.message}\n\nIf it is urgent, call us at (517) 500-8870.\n\nBest regards,\nHome Sell Direct Team`
+        subject: 'We got your message - Metro Michigan Property Buyers',
+        text: `Hi ${contact.name},\n\nThanks for reaching out. We received your message and someone from our team will get back to you within one business day.\n\nFor a copy of your records, here is what you sent:\n\n${contact.message}\n\nIf it is urgent, call us at (517) 500-8870.\n\nBest regards,\nMetro Michigan Property Buyers Team`
     };
 
     return sendEmail(message);

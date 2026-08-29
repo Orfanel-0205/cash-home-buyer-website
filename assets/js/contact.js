@@ -1,5 +1,5 @@
 // ===========================
-// CONTACT FORM - HOME SELL DIRECT
+// CONTACT FORM - METRO MICHIGAN PROPERTY BUYERS
 // ===========================
 // Posts to POST /api/contact, which emails the message to ADMIN_EMAIL.
 // Client-side checks mirror the server's express-validator rules; the server
