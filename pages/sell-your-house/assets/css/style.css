@@ -120,10 +120,10 @@ ul {
 }
 
 .logo-icon {
-    /* Wordmark is 1894x830 (2.28:1); this box matches that ratio. */
+    /* Wordmark is 755x330 (2.29:1); this box matches that ratio. */
     width: 146px;
     height: 64px;
-    background: url("/assets/img/MetroMichigan.png") no-repeat left center;
+    background: url("/assets/img/FINALLOGO.png") no-repeat left center;
     background-size: contain;
     display: inline-block;
 }
